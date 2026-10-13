@@ -1,2 +1,4 @@
-flask
-flask-cors
+
+Flask
+Flask-CORS
+gunicorn
