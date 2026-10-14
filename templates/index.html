@@ -157,4 +157,24 @@ function carregarRelatorio(){
 }
 </script>
 </body>
-                                                                                    </html>
+   <div id="tabP" class="hidden">
+<div class="card">
+<h3>📦 Cadastrar Produto com Foto</h3>
+<input class="input" id="pNome" placeholder="Nome do produto">
+<input class="input" id="pPreco" type="number" placeholder="Preço MZN">
+<input class="input" id="pStock" type="number" placeholder="Estoque">
+
+<div style="border:2px dashed #3b82f6;padding:12px;border-radius:10px;text-align:center;background:#0f172a;margin:6px 0">
+<label style="color:#3b82f6;font-weight:bold;cursor:pointer">
+📸 Adicionar foto do produto
+<input type="file" id="pImagem" accept="image/*" style="display:none" onchange="previewFoto(event)">
+</label>
+<img id="previewImg" style="width:100%;max-height:180px;object-fit:contain;border-radius:10px;margin-top:8px;display:none">
+<p style="font-size:11px;color:#64748b">Clique e tire foto com câmera</p>
+</div>
+
+<button class="btn btn-green" onclick="salvarProdutoFoto()">💾 Salvar Produto com Foto</button>
+<div id="listaProd" style="margin-top:15px"></div>
+</div>
+   </div>  </html>
+
