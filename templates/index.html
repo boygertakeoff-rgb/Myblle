@@ -10,15 +10,13 @@ body{background:#0f172a;color:white}
 .logo{font-size:20px;font-weight:bold;color:#3b82f6}.logo span{color:white}
 .card{background:#1e293b;margin:12px;padding:16px;border-radius:12px;border:1px solid #334155}
 .btn{background:#3b82f6;color:white;padding:12px;border:none;border-radius:8px;width:100%;font-weight:bold;margin-top:8px;cursor:pointer}
-.btn-green{background:#10b981}.btn-red{background:#ef4444}.btn-small{width:auto;padding:6px 10px;font-size:12px;display:inline-block}
+.btn-green{background:#10b981}.btn-red{background:#ef4444}
 .input{width:100%;padding:12px;margin:6px 0;border-radius:8px;border:1px solid #334155;background:#0f172a;color:white}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .price{color:#10b981;font-weight:bold}
 .badge{background:#3b82f6;padding:4px 8px;border-radius:20px;font-size:11px}
 #loginScreen{position:fixed;inset:0;background:#0f172a;z-index:100;display:flex;align-items:center;justify-content:center;padding:20px}
 .tabs{display:flex;gap:6px;margin:12px}.tab{flex:1;padding:10px;background:#1e293b;border:1px solid #334155;border-radius:8px;text-align:center;cursor:pointer;font-size:13px}.tab.active{background:#3b82f6}
 .hidden{display:none!important}
-@media print{body *{visibility:hidden} #reciboPrint, #reciboPrint *{visibility:visible} #reciboPrint{position:absolute;left:0;top:0;width:100%;background:white;color:black;padding:20px}}
 </style>
 </head>
 <body>
@@ -26,7 +24,7 @@ body{background:#0f172a;color:white}
 <div id="loginScreen">
 <div class="card" style="width:100%;max-width:360px">
 <h2 style="text-align:center;color:#3b82f6">Myblle PRO</h2>
-<p style="text-align:center;color:#94a3b8;margin:8px 0;font-size:13px" id="loginSub">Login do Sistema</p>
+<p style="text-align:center;color:#94a3b8;margin:8px 0;font-size:13px">Login Local - Funciona 100%</p>
 <input class="input" id="user" placeholder="Usuário" value="admin">
 <input class="input" id="pass" type="password" placeholder="Senha" value="myblle123">
 <button class="btn" onclick="fazerLogin()">Entrar no POS</button>
@@ -43,11 +41,120 @@ body{background:#0f172a;color:white}
 <div class="logo">My<span>blle</span> <small style="font-size:11px" id="userCargo">PRO</small></div>
 <div style="display:flex;gap:6px;align-items:center">
 <span class="badge" id="nomeUser">MZN</span>
-<button class="btn-small btn-red" onclick="logout()" style="border:none;border-radius:6px;color:white">Sair</button>
+<button onclick="logout()" style="background:#ef4444;border:none;border-radius:6px;color:white;padding:6px 10px;font-size:12px">Sair</button>
 </div>
 </div>
 
-<div class="card" id="cardStatus">
-<h3>🔵 Myblle POS - ONLINE <span style="font-size:11px;color:#10b981" id="tipoUser">PRO</span></h3>
-<div class="grid2" style="margin-top:10px">
-<div style="background:#0f172a;padding:10px;border-radius:8px;text-align:center"><div style="font-size:18px" id="totalFiliais">3</div>
+<div class="tabs">
+<div class="tab active" onclick="mostrarTab('venda')" id="tabVenda">💰 Venda</div>
+<div class="tab admin-only" onclick="mostrarTab('produtos')" id="tabProdutos">📦 Produtos</div>
+<div class="tab admin-only" onclick="mostrarTab('relatorio')" id="tabRel">📊 Relatório</div>
+</div>
+
+<div id="tabV">
+<div class="card">
+<h3>💰 Nova Venda - <span id="caixaNome" style="font-size:14px;color:#3b82f6">Caixa</span></h3>
+<select class="input" id="selectProd" onchange="preencherProd()"><option value="">Escolha produto</option></select>
+<input class="input" id="prod" placeholder="Produto">
+<input class="input" id="preco" type="number" placeholder="Preço MZN">
+<input class="input" id="qtd" type="number" value="1">
+<button class="btn btn-green" onclick="vender()">Vender</button>
+<div id="carrinho" style="margin-top:12px"></div>
+<h2 id="total" style="margin-top:10px" class="price">Total: MZN 0</h2>
+<button class="btn" onclick="finalizar()">✅ Finalizar e Imprimir</button>
+</div>
+</div>
+
+<div id="tabP" class="hidden">
+<div class="card">
+<h3>📦 Cadastrar Produto</h3>
+<input class="input" id="pNome" placeholder="Nome do produto">
+<input class="input" id="pPreco" type="number" placeholder="Preço MZN">
+<input class="input" id="pStock" type="number" placeholder="Estoque">
+<button class="btn btn-green" onclick="salvarProduto()">Salvar Produto</button>
+<div id="listaProd" style="margin-top:15px"></div>
+</div>
+</div>
+
+<div id="tabR" class="hidden">
+<div class="card">
+<h3>📊 Relatório</h3>
+<div id="relatorio"></div>
+</div>
+</div>
+
+<div id="reciboPrint" style="display:none"></div>
+
+<script>
+let total=0, carrinho=[], cargo='admin', nomeLogado='Admin', produtosLocal=JSON.parse(localStorage.getItem('myblle_prod')||'[]'), vendasLocal=JSON.parse(localStorage.getItem('myblle_vendas')||'[]')
+
+const USUARIOS = {
+  "admin": {senha:"myblle123", cargo:"admin", nome:"Administrador"},
+  "caixa": {senha:"caixa123", cargo:"caixa", nome:"Caixa Nampula"},
+  "caixa1": {senha:"123", cargo:"caixa", nome:"Caixa 1"}
+}
+
+function fazerLogin(){
+  let u=document.getElementById('user').value.trim().toLowerCase()
+  let p=document.getElementById('pass').value.trim()
+  console.log("Tentando",u,p)
+  if(USUARIOS[u] && USUARIOS[u].senha===p){
+    cargo=USUARIOS[u].cargo; nomeLogado=USUARIOS[u].nome
+    document.getElementById('loginScreen').style.display='none'
+    document.getElementById('nomeUser').innerText=nomeLogado
+    document.getElementById('caixaNome').innerText=nomeLogado
+    document.getElementById('userCargo').innerText='- '+cargo.toUpperCase()
+    if(cargo==='caixa'){
+      document.querySelectorAll('.admin-only').forEach(e=>e.style.display='none')
+    }
+    listarProdutos(); carregarRelatorio()
+    alert('Bem-vindo '+nomeLogado+'!')
+  } else {
+    document.getElementById('loginErro').innerText='Usuário ou senha errada! Use admin / myblle123'
+  }
+}
+function logout(){location.reload()}
+function mostrarTab(t){
+ if(cargo==='caixa' && t!=='venda') return alert('Caixa só pode vender!')
+ document.getElementById('tabV').classList.add('hidden');document.getElementById('tabP').classList.add('hidden');document.getElementById('tabR').classList.add('hidden')
+ document.getElementById('tabVenda').classList.remove('active');document.getElementById('tabProdutos').classList.remove('active');document.getElementById('tabRel').classList.remove('active')
+ if(t=='venda'){document.getElementById('tabV').classList.remove('hidden');document.getElementById('tabVenda').classList.add('active')}
+ if(t=='produtos'){document.getElementById('tabP').classList.remove('hidden');document.getElementById('tabProdutos').classList.add('active');listarProdutos()}
+ if(t=='relatorio'){document.getElementById('tabR').classList.remove('hidden');document.getElementById('tabRel').classList.add('active');carregarRelatorio()}
+}
+function salvarProduto(){
+ let nome=document.getElementById('pNome').value, preco=parseFloat(document.getElementById('pPreco').value), stock=parseInt(document.getElementById('pStock').value)||0
+ if(!nome||!preco)return alert('Preencha nome e preço')
+ produtosLocal.push({id:Date.now(), nome, preco, stock})
+ localStorage.setItem('myblle_prod', JSON.stringify(produtosLocal))
+ alert('✅ Produto salvo!');document.getElementById('pNome').value='';document.getElementById('pPreco').value='';listarProdutos()
+}
+function listarProdutos(){
+ let html='', sel='<option value="">Escolha produto</option>'
+ produtosLocal.forEach(p=>{html+=`<div style="background:#0f172a;padding:8px;margin:4px 0;border-radius:6px;display:flex;justify-content:space-between"><span>${p.nome}</span><span class="price">MZN ${p.preco}</span></div>`; sel+=`<option data-nome="${p.nome}" data-preco="${p.preco}">${p.nome} - MZN ${p.preco}</option>`})
+ document.getElementById('listaProd').innerHTML=html||'<p style="color:#64748b">Nenhum produto</p>';document.getElementById('selectProd').innerHTML=sel
+}
+function preencherProd(){let s=document.getElementById('selectProd');let o=s.options[s.selectedIndex];if(o.dataset.nome){document.getElementById('prod').value=o.dataset.nome;document.getElementById('preco').value=o.dataset.preco}}
+function vender(){
+ let p=document.getElementById('prod').value, pr=parseFloat(document.getElementById('preco').value)||0, q=parseInt(document.getElementById('qtd').value)||1
+ if(!p||!pr)return alert('Preencha produto e preço')
+ let sub=pr*q;total+=sub;carrinho.push({p,pr,q,sub})
+ document.getElementById('carrinho').innerHTML+=`<div style="background:#0f172a;padding:8px;margin:4px 0;border-radius:6px;display:flex;justify-content:space-between"><span>${p} x${q}</span><span class="price">MZN ${sub}</span></div>`
+ document.getElementById('total').innerText='Total: MZN '+total;document.getElementById('prod').value='';document.getElementById('preco').value=''
+}
+function finalizar(){
+ if(total==0)return alert('Carrinho vazio')
+ vendasLocal.push({total, data:new Date().toLocaleString(), caixa:nomeLogado})
+ localStorage.setItem('myblle_vendas', JSON.stringify(vendasLocal))
+ let itens=carrinho.map(c=>`${c.p} x${c.q} = MZN ${c.sub}`).join('<br>')
+ let recibo=`<div style="padding:20px;color:black;background:white"><h2 style="text-align:center">MYBLLE - RECIBO</h2><p style="text-align:center">Caixa: ${nomeLogado}<br>${new Date().toLocaleString()}</p><hr><p>${itens}</p><hr><h3>Total: MZN ${total}</h3><p style="text-align:center;margin-top:20px">Obrigado!</p></div>`
+ document.getElementById('reciboPrint').innerHTML=recibo; document.getElementById('reciboPrint').style.display='block'
+ setTimeout(()=>{let w=window.open('','_blank');w.document.write(recibo);w.print();document.getElementById('reciboPrint').style.display='none';total=0;carrinho=[];document.getElementById('carrinho').innerHTML='';document.getElementById('total').innerText='Total: MZN 0';carregarRelatorio()},300)
+}
+function carregarRelatorio(){
+ let totalV=vendasLocal.reduce((s,v)=>s+v.total,0)
+ document.getElementById('relatorio').innerHTML=`<div style="background:#0f172a;padding:10px;border-radius:8px"><p>Total vendas: ${vendasLocal.length}</p><p class="price">Faturamento: MZN ${totalV}</p><p>Logado: ${nomeLogado} (${cargo})</p></div>`
+}
+</script>
+</body>
+                                                                                    </html>
