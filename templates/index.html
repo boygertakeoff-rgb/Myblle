@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Myblle - Software POS SaaS</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial}
+body{background:#0f172a;color:white}
+.header{background:#1e293b;padding:15px;display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #3b82f6}
+.logo{font-size:24px;font-weight:bold;color:#3b82f6}
+.logo span{color:white}
+.card{background:#1e293b;margin:15px;padding:20px;border-radius:12px;border:1px solid #334155}
+.btn{background:#3b82f6;color:white;padding:12px 20px;border:none;border-radius:8px;width:100%;font-weight:bold;margin-top:10px;cursor:pointer}
+.btn-green{background:#10b981}
+.input{width:100%;padding:12px;margin:8px 0;border-radius:8px;border:1px solid #334155;background:#0f172a;color:white}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.price{color:#10b981;font-weight:bold}
+.badge{background:#3b82f6;padding:4px 8px;border-radius:20px;font-size:12px}
+</style>
+</head>
+<body>
+<div class="header">
+<div class="logo">My<span>blle</span></div>
+<div class="badge">MOZAMBIQUE MZN</div>
+</div>
+
+<div class="card">
+<h3>🔵 Myblle POS - ONLINE</h3>
+<p style="color:#94a3b8;margin:10px 0">SaaS para Lojas e Supermercados</p>
+<div class="grid">
+<div style="background:#0f172a;padding:10px;border-radius:8px;text-align:center">
+<div style="font-size:20px">3</div><small>Filiais</small></div>
+<div style="background:#0f172a;padding:10px;border-radius:8px;text-align:center">
+<div style="font-size:20px" class="price">MZN 45.250</div><small>Vendas Hoje</small></div>
+</div>
+</div>
+
+<div class="card">
+<h3>💰 Nova Venda</h3>
+<input class="input" id="prod" placeholder="Produto (ex: Arroz 1kg)">
+<input class="input" id="preco" type="number" placeholder="Preço MZN">
+<input class="input" id="qtd" type="number" value="1" placeholder="Qtd">
+<button class="btn btn-green" onclick="vender()">Vender - Adicionar ao Carrinho</button>
+<div id="carrinho" style="margin-top:15px"></div>
+<h2 id="total" style="margin-top:10px" class="price">Total: MZN 0</h2>
+<button class="btn" onclick="finalizar()">✅ Finalizar Venda e Imprimir Recibo</button>
+</div>
+
+<div class="card">
+<h3>🏬 Filiais Ativas</h3>
+<p>📍 Nampula - Matriz (ON)</p>
+<p>📍 Maputo - Filial 1 (ON)</p>
+<p>📍 Beira - Filial 2 (ON)</p>
+<p style="margin-top:10px;color:#10b981">● Servidor Render Online: https://myblle.onrender.com</p>
+</div>
+
+<script>
+let total=0
+let car=[]
+function vender(){
+ let p=document.getElementById('prod').value
+ let pr=parseFloat(document.getElementById('preco').value)||0
+ let q=parseInt(document.getElementById('qtd').value)||1
+ if(!p||!pr)return alert('Preencha produto e preço')
+ let sub=pr*q
+ car.push({p,pr,q,sub})
+ total+=sub
+ document.getElementById('carrinho').innerHTML+=`<div style="background:#0f172a;padding:8px;margin:5px 0;border-radius:6px;display:flex;justify-content:space-between"><span>${p} x${q}</span><span class="price">MZN ${sub}</span></div>`
+ document.getElementById('total').innerText='Total: MZN '+total
+ document.getElementById('prod').value='';document.getElementById('preco').value=''
+}
+function finalizar(){
+ if(total==0)return alert('Carrinho vazio')
+ alert('✅ Venda Finalizada!\nTotal MZN '+total+'\nRecibo Myblle enviado!\nObrigado!')
+ car=[];total=0;document.getElementById('carrinho').innerHTML='';document.getElementById('total').innerText='Total: MZN 0'
+}
+fetch('/api/status').then(r=>r.json()).then(d=>console.log('API:',d))
+</script>
+</body>
+  </html>
