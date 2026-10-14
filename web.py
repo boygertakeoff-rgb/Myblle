@@ -5,7 +5,14 @@ import os, json, datetime
 app = Flask(__name__)
 CORS(app)
 
-# Banco simples em arquivo
+# USUÁRIOS DO SISTEMA
+USUARIOS = {
+    "admin": {"senha": "myblle123", "cargo": "admin", "nome": "Administrador"},
+    "caixa": {"senha": "caixa123", "cargo": "caixa", "nome": "Caixa - Nampula"},
+    "caixa1": {"senha": "123", "cargo": "caixa", "nome": "Caixa 1"},
+    "caixa2": {"senha": "123", "cargo": "caixa", "nome": "Caixa 2"}
+}
+
 DB_FILE = "myblle_db.json"
 if not os.path.exists(DB_FILE):
     with open(DB_FILE, "w") as f:
@@ -26,8 +33,11 @@ def home():
 @app.route('/api/login', methods=['POST'])
 def login():
     data = request.json
-    if data.get("user") == "admin" and data.get("pass") == "myblle123":
-        return jsonify({"ok": True})
+    user = data.get("user")
+    pwd = data.get("pass")
+    if user in USUARIOS and USUARIOS[user]["senha"] == pwd:
+        u = USUARIOS[user]
+        return jsonify({"ok": True, "cargo": u["cargo"], "nome": u["nome"], "user": user})
     return jsonify({"ok": False}), 401
 
 @app.route('/api/produtos', methods=['GET', 'POST'])
