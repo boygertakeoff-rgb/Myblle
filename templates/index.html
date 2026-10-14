@@ -1,112 +1,250 @@
-<!DOCTYPE html><html lang="pt"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Myblle Matola - Português</title>
-<style>
-*{margin:0;padding:0;box-sizing:border-box;font-family:Inter,Arial}
-body{background:#f1f5f9}
-.topo{background:#0f172a;color:white;padding:12px 14px;display:flex;justify-content:space-between;font-size:13px;border-bottom:3px solid #2563eb}
-#telaLogin{position:fixed;inset:0;background:#0f172a;z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px}
-.boxLogin{background:#1e293b;padding:28px;border-radius:16px;width:100%;max-width:380px;border:1px solid #334155}
-.input{width:100%;padding:12px;margin:7px 0;border:1px solid #334155;border-radius:10px;background:#0f172a;color:white}
-.btn{width:100%;padding:12px;border:none;border-radius:10px;font-weight:bold;cursor:pointer;margin-top:8px}
-.btn-azul{background:#2563eb;color:white}.btn-escuro{background:#0f172a;color:white;border:1px solid #334155}
-.barra-cat{background:white;display:flex;gap:8px;overflow-x:auto;padding:10px;border-bottom:1px solid #e2e8f0}
-.cat{padding:7px 16px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:20px;white-space:nowrap;cursor:pointer;font-size:12px}.cat.active{background:#0f172a;color:white}
-.principal{display:flex;height:calc(100vh - 95px)}
-.centro{flex:1;background:#f8fafc;padding:12px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;overflow:auto;align-content:start}
-.prod{border:1px solid #e2e8f0;border-radius:12px;padding:14px;text-align:center;cursor:pointer;background:white}.prod:hover{border-color:#2563eb}
-.direita{width:340px;background:white;border-left:1px solid #e2e8f0;display:flex;flex-direction:column}
-.carrinho{flex:1;overflow:auto;padding:12px;font-size:12px}
-.modal{position:fixed;inset:0;background:rgba(15,23,42,0.7);display:none;align-items:center;justify-content:center;z-index:100}
-.cartao{background:white;padding:18px;border-radius:16px;width:95%;max-width:620px;max-height:92vh;overflow:auto}
-.grade-mesas{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.mesa{padding:16px;border-radius:12px;text-align:center;color:white;font-weight:bold;cursor:pointer}.livre{background:#2563eb}.ocupada{background:#ef4444}
-.aviso{background:#fef3c7;border:1px solid #fbbf24;color:#92400e;padding:6px 10px;border-radius:8px;font-weight:600;font-size:11px;display:inline-block;margin:6px 0}
-.hidden{display:none!important}
-</style></head><body>
+# -*- coding: utf-8 -*-
+"""
+SISTEMA POS SAAS MOÇAMBIQUE - VERSÃO COMPLETA E UNIFICADA (WEB + MOBILE ANDROID)
+Moeda: Meticais (MZN) | Arquitetura: Flask API + Kivy Mobile GUI
+"""
 
-<div id="telaLogin">
-<div class="boxLogin">
-<h2 style="color:white;text-align:center;font-size:22px">Myblle <span style="color:#60a5fa">Matola</span></h2>
-<p style="text-align:center;color:#94a3b8;font-size:12px;margin:8px 0 18px">Sistema em Português - Frente de Caixa</p>
-<input class="input" id="usuario" placeholder="Utilizador" value="admin">
-<input class="input" id="senha" type="password" placeholder="Palavra-passe" value="myblle123">
-<button class="btn btn-azul" onclick="entrar()">Entrar no Sistema</button>
-<p style="color:#64748b;font-size:11px;text-align:center;margin-top:12px">
-admin / myblle123 = Administrador<br>
-caixa / caixa123 = Operador de Caixa
-</p>
-<p id="erroLogin" style="color:#f87171;text-align:center;font-size:12px;margin-top:8px"></p>
-<button class="btn btn-escuro" style="font-size:11px;margin-top:12px" onclick="localStorage.clear();location.reload()">Limpar memória se não entrar</button>
-</div>
-</div>
+import os
+import sys
+import sqlite3
+from datetime import datetime, timedelta
 
-<div class="topo"><div>● Myblle Matola - <span id="usuarioLogado">Original</span> - Moçambique</div><div><button onclick="sair()" style="background:#1e293b;color:white;border:1px solid #334155;padding:5px 12px;border-radius:8px;cursor:pointer">Sair</button></div></div>
-<div class="barra-cat"><div class="cat active">Combos</div><div class="cat">Cervejas</div><div class="cat">Bebidas</div><div class="cat">Lanches</div><div class="cat" onclick="abrirConfig()" style="background:#dbeafe;color:#1e40af">⚙️ Configurar Mesas</div></div>
+# =====================================================================
+# 1. ATIVAÇÃO DO BANCO DE DADOS CENTRAL (SQLite)
+# =====================================================================
+DB_NAME = "central_corporate_cloud.db"
 
-<div class="principal">
-<div class="centro" id="gradeProdutos"></div>
-<div class="direita">
-<div style="padding:12px;border-bottom:1px solid #e2e8f0;background:#f8fafc"><b style="color:#0f172a">Mesa: <span id="mesaAtual">-</span> | Pessoas: <span id="pessoasAtual">-</span></b></div>
-<div class="carrinho" id="carrinho"><div style="color:#94a3b8;text-align:center;margin-top:30px">Nenhum produto<br>Clique nos produtos à esquerda</div></div>
-<div style="padding:12px;border-top:1px solid #e2e8f0;background:white">
-<div style="display:flex;justify-content:space-between;font-weight:bold;font-size:14px"><span>Total:</span><span id="total" style="color:#0f172a">MZN 0</span></div>
-<div class="aviso">Clique em SEGURAR para escolher a mesa</div>
-<button class="btn btn-azul" onclick="segurarPedido()">🪑 SEGURAR - Escolher Mesa</button>
-<div class="aviso">Para buscar pedido, clique em BUSCAR</div>
-<button class="btn" style="background:#0f172a;color:white" onclick="buscarPedido()">↩️ BUSCAR - Ver Mesas</button>
-<button class="btn" style="background:#f1f5f9;color:#0f172a;border:1px solid #e2e8f0" onclick="pagar()">💰 PAGAR</button>
-</div>
-</div>
-</div>
+def inicializar_banco_dados():
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    
+    # Tabela de Filiais / Clientes SaaS
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS filiais (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nome TEXT NOT EXISTS,
+            localizacao TEXT,
+            pacote TEXT,
+            valor_mensalidade REAL,
+            data_expiracao TEXT,
+            estado_licenca TEXT
+        )
+    """)
+    
+    # Tabela de Utilizadores (Dono, Gerentes e Caixas)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS utilizadores (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE,
+            password TEXT,
+            perfil TEXT,
+            filial_id INTEGER,
+            FOREIGN KEY(filial_id) REFERENCES filiais(id)
+        )
+    """)
+    
+    # Tabela de Produtos (Isolamento por Filial)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS produtos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            codigo_barras TEXT,
+            nome TEXT,
+            preco REAL,
+            stock_atual INTEGER,
+            stock_minimo INTEGER,
+            filial_id INTEGER,
+            FOREIGN KEY(filial_id) REFERENCES filiais(id)
+        )
+    """)
+    
+    # Tabela de Vendas / Transações Globais
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS vendas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            filial_id INTEGER,
+            operador TEXT,
+            total REAL,
+            metodo_pagamento TEXT,
+            data_hora TEXT,
+            FOREIGN KEY(filial_id) REFERENCES filiais(id)
+        )
+    """)
 
-<div id="modalConfig" class="modal"><div class="cartao">
-<h3 style="color:#0f172a">⚙️ Gerir Mesas - Configuração de Mesas</h3>
-<div class="aviso">Vá em Configurações > Número de Mesas > Adicionar Área</div>
-<div style="display:flex;justify-content:space-between;margin:12px 0"><h4>Áreas Criadas</h4><button class="btn btn-azul" style="width:auto;padding:6px 12px" onclick="mostrarAdd()">+ Adicionar Área</button></div>
-<table border="1" style="width:100%;border-collapse:collapse;font-size:12px;border:1px solid #e2e8f0"><tr style="background:#f8fafc"><th style="padding:8px">Área</th><th>Prefixo</th><th>Qtd</th><th>Apagar</th></tr><tbody id="listaAreas"></tbody></table>
-<div id="boxAdd" style="border:2px solid #2563eb;border-radius:12px;padding:12px;margin-top:12px;background:#f8fafc">
-<div class="aviso">Digite o nome da área, prefixo da mesa e quantidade</div>
-<input class="input" style="background:white;color:black;border:1px solid #cbd5e1" id="nomeArea" value="Salão" placeholder="Nome da área: Salão, Esplanada">
-<input class="input" style="background:white;color:black;border:1px solid #cbd5e1" id="prefixo" value="A" placeholder="Prefixo: A, B, C">
-<input class="input" style="background:white;color:black;border:1px solid #cbd5e1" id="qtdMesas" type="number" value="10" placeholder="Quantidade: 10">
-<button class="btn btn-azul" onclick="gerar()">Gerar Mesas - Vai mostrar as mesas</button>
-<div class="aviso">Pode apagar mesas que não quer</div>
-<div id="previa" style="max-height:150px;overflow:auto;border:1px solid #e2e8f0;background:white;border-radius:8px;margin:6px 0;padding:8px"></div>
-<div class="aviso">Não esqueça de clicar em Salvar</div>
-<button class="btn btn-azul" onclick="salvarAreas()">💾 SALVAR</button>
-</div>
-<button class="btn" style="background:#0f172a;color:white;margin-top:12px" onclick="document.getElementById('modalConfig').style.display='none'">FECHAR - Ir para o Caixa</button>
-</div></div>
+    # Inserção de dados de simulação padrão (Se a BD estiver vazia)
+    cursor.execute("SELECT COUNT(*) FROM filiais")
+    if cursor.fetchone()[0] == 0:
+        hoje = datetime.now()
+        data_ativa = (hoje + timedelta(days=30)).strftime("%Y-%m-%d")
+        data_expirada = (hoje - timedelta(days=1)).strftime("%Y-%m-%d")
+        
+        # Inserir Filiais de Teste com os Pacotes em MZN acordados
+        cursor.execute("INSERT INTO filiais VALUES (1, 'Maputo Sede', 'Av. Julius Nyerere', '1 Loja', 1000.0, ?, 'Ativa')", (data_ativa,))
+        cursor.execute("INSERT INTO filiais VALUES (2, 'Beira Filial', 'Av. Samora Machel', '3 a 4 Lojas', 3500.0, ?, 'Expirada')", (data_expirada,))
+        cursor.execute("INSERT INTO filiais VALUES (3, 'Supermercado Nampula', 'Av. Eduardo Mondlane', 'Supermercado', 10000.0, ?, 'Ativa')", (data_ativa,))
+        
+        # Inserir Utilizadores
+        cursor.execute("INSERT INTO utilizadores VALUES (1, 'admin', 'admin', 'Dono', 1)")
+        cursor.execute("INSERT INTO utilizadores VALUES (2, 'gerente', 'gerente123', 'Gerente', 1)")
+        cursor.execute("INSERT INTO utilizadores VALUES (3, 'caixa1', '1234', 'Caixa', 1)")
+        cursor.execute("INSERT INTO utilizadores VALUES (4, 'caixa2', '1234', 'Caixa', 2)")
+        
+        # Inserir Produtos em Meticais
+        cursor.execute("INSERT INTO produtos VALUES (1, '1111', 'Arroz Nacional 1kg', 75.0, 150, 30, 1)")
+        cursor.execute("INSERT INTO produtos VALUES (2, '2222', 'Oleo de Cozinha 1L', 130.0, 80, 20, 1)")
+        cursor.execute("INSERT INTO produtos VALUES (3, '3333', 'Farinha de Milho 1kg', 55.0, 12, 25, 1)") # Stock baixo para IA acusar
+        
+    conn.commit()
+    conn.close()
 
-<div id="modalMesas" class="modal"><div class="cartao">
-<h3 id="tituloMesas" style="color:#0f172a">Escolher Mesa</h3>
-<div class="aviso" id="avisoMesas">Selecione uma mesa para segurar o pedido</div>
-<div class="grade-mesas" id="gradeMesas" style="margin-top:10px"></div>
-<div id="boxPessoas" style="display:none;margin-top:12px;background:#eff6ff;padding:12px;border-radius:12px;border:1px solid #bfdbfe">
-<div class="aviso">Digite o número de pessoas na mesa</div>
-<div style="display:flex;gap:8px;margin-top:8px"><input class="input" style="background:white;color:black;flex:1" id="inputPessoas" type="number" value="2" placeholder="Nº de pessoas"><button class="btn btn-azul" style="width:110px" onclick="confirmarPessoas()">Confirmar</button></div>
-</div>
-<button class="btn" style="background:#f1f5f9;color:#0f172a;border:1px solid #e2e8f0;margin-top:12px" onclick="document.getElementById('modalMesas').style.display='none'">Fechar</button>
-</div></div>
+# =====================================================================
+# 2. ESCRITA AUTOMÁTICA DO FICHEIRO BUILDOZER.SPEC (Android Compilação)
+# =====================================================================
+def gerar_buildozer_spec():
+    conteudo_spec = """[app]
+title = Mocambique POS SaaS
+package.name = mzpos_saas
+package.domain = co.mz.pos
+source.dir = .
+source.include_exts = py,png,jpg,kv,atlas,db
+version = 1.0.0
+requirements = python3,kivy,sqlite3,requests,reportlab,matplotlib
 
-<script>
-const UTILIZADORES={"admin":{senha:"myblle123",nome:"Administrador"},"caixa":{senha:"caixa123",nome:"Caixa"}};
-function entrar(){let u=document.getElementById('usuario').value.toLowerCase().trim();let p=document.getElementById('senha').value.trim();if(UTILIZADORES[u]&&UTILIZADORES[u].senha===p){document.getElementById('telaLogin').classList.add('hidden');document.getElementById('usuarioLogado').innerText=UTILIZADORES[u].nome;iniciar();}else{document.getElementById('erroLogin').innerText='❌ Utilizador: admin | Senha: myblle123'}}
-function sair(){document.getElementById('telaLogin').classList.remove('hidden')}
-let produtos=[{id:1,nome:"Arroz 25kg",preco:1050},{id:2,nome:"Frango Inteiro",preco:450},{id:3,nome:"Coca-Cola 500ml",preco:80},{id:4,nome:"Matapa",preco:200},{id:5,nome:"Cerveja 2M",preco:120},{id:6,nome:"Xima",preco:150}];
-let areas=JSON.parse(localStorage.getItem('myblle_areas')||'[]'),mesas=JSON.parse(localStorage.getItem('myblle_mesas')||'[]');
-let carrinho=[],mesaSelecionada=null,modo='segurar',mesasTemp=[],mesaAtualNome='-',pessoasAtual=0;
-function iniciar(){if(mesas.length==0){for(let i=1;i<=10;i++) mesas.push({id:"A"+i,area:"Salão",ocupada:false,pedido:null,pessoas:0}); localStorage.setItem('myblle_mesas',JSON.stringify(mesas));} mostrarProdutos();mostrarAreas();}
-function mostrarProdutos(){let h='';produtos.forEach(p=>h+=`<div class="prod" onclick="adicionar(${p.id})"><div style="font-size:28px">🍛</div><div style="font-weight:600;font-size:12px;color:#0f172a">${p.nome}</div><div style="color:#2563eb;font-weight:bold;font-size:12px">MZN ${p.preco}</div></div>`);document.getElementById('gradeProdutos').innerHTML=h}
-function adicionar(id){let p=produtos.find(x=>x.id===id);let ex=carrinho.find(c=>c.id===id);if(ex){ex.qtd++;ex.subtotal=ex.qtd*ex.preco}else carrinho.push({id:p.id,nome:p.nome,preco:p.preco,qtd:1,subtotal:p.preco});atualizarCarrinho()}
-function atualizarCarrinho(){let total=carrinho.reduce((s,c)=>s+c.subtotal,0);document.getElementById('total').innerText='MZN '+total;document.getElementById('carrinho').innerHTML=carrinho.map(c=>`<div style="padding:6px;border-bottom:1px solid #f1f5f9;display:flex;justify-content:space-between"><span>${c.nome} x${c.qtd}</span><b>MZN ${c.subtotal}</b></div>`).join('')||'<div style="color:#94a3b8;text-align:center;margin-top:30px">Nenhum produto<br>Faça um pedido primeiro</div>'}
-function mostrarAdd(){document.getElementById('boxAdd').style.display='block'}
-function gerar(){let nome=document.getElementById('nomeArea').value||'Salão',pref=document.getElementById('prefixo').value||'A',num=parseInt(document.getElementById('qtdMesas').value)||10;mesasTemp=[];for(let i=1;i<=num;i++)mesasTemp.push({id:pref+i,area:nome});let h='';mesasTemp.forEach((t,i)=>h+=`<div style="display:flex;justify-content:space-between;padding:6px;border-bottom:1px solid #f1f5f9"><span>${t.id} - ${t.area}</span><span style="color:#ef4444;cursor:pointer;font-weight:bold" onclick="mesasTemp.splice(${i},1);gerar()">🗑️ Apagar</span></div>`);document.getElementById('previa').innerHTML=h}
-function salvarAreas(){if(mesasTemp.length==0)return alert('Clique em Gerar Mesas primeiro!');areas.push({nome:document.getElementById('nomeArea').value,prefixo:document.getElementById('prefixo').value,qtd:mesasTemp.length});mesasTemp.forEach(t=>{if(!mesas.find(m=>m.id===t.id))mesas.push({id:t.id,area:t.area,ocupada:false,pedido:null,pessoas:0})});localStorage.setItem('myblle_areas',JSON.stringify(areas));localStorage.setItem('myblle_mesas',JSON.stringify(mesas));mesasTemp=[];document.getElementById('previa').innerHTML='';mostrarAreas();alert('Salvo com sucesso! Não esqueça de Salvar - Agora feche e vá para o caixa')}
-function mostrarAreas(){let h='';areas.forEach((a,i)=>h+=`<tr><td style="padding:8px">${a.nome}</td><td>${a.prefixo}</td><td>${a.qtd}</td><td><button onclick="areas.splice(${i},1);localStorage.setItem('myblle_areas',JSON.stringify(areas));mostrarAreas()" style="color:red;border:none;background:none;cursor:pointer">X</button></td></tr>`);document.getElementById('listaAreas').innerHTML=h}
-function abrirConfig(){document.getElementById('modalConfig').style.display='flex';mostrarAreas()}
-function segurarPedido(){if(carrinho.length==0)return alert('Faça um pedido primeiro - Adicione produtos!');modo='segurar';document.getElementById('modalMesas').style.display='flex';document.getElementById('tituloMesas').innerText='Selecione uma mesa para segurar o pedido';document.getElementById('avisoMesas').innerText='Selecione uma mesa para segurar o pedido';mostrarGradeMesas()}
-function buscarPedido(){modo='buscar';document.getElementById('modalMesas').style.display='flex';document.getElementById('tituloMesas').innerText='Para buscar pedido da mesa, clique em buscar';document.getElementById('avisoMesas').innerText='Selecione a mesa para ver o pedido e fazer pagamento ou adicionar item';mostrarGradeMesas()}
-function mostrarGradeMesas(){let h='';mesas.forEach(m=>{let cls=m.ocupada?'ocupada':'livre';let txt=m.ocupada?`${m.id} - ${m.pessoas} pessoas - MZN ${m.pedido.total}`:m.id;h+=`<div class="mesa ${cls}" onclick="clicarMesa('${m.id}')">${txt}</div>`});document.getElementById('gradeMesas').innerHTML=h;document.getElementById('boxPessoas').style.display='none'}
-function clicarMesa(id){mesaSelecionada=mesas.find(m=>m.id===id);if(modo==='segurar'){if(mesaSelecionada.ocupada)return alert('Mesa ocupada!');document.getElementById('boxPessoas').style.display='block'}else{if(!mesaSelecionada.ocupada)return alert('Mesa livre!');carrinho=mesaSelecionada.pedido.itens;mesaAtualNome=mesaSelecionada.id;pessoasAtual=mesaSelecionada.pessoas;mesaSelecionada.ocupada=false;mesaSelecionada.pedido=null;localStorage.setItem('myblle_mesas',JSON.stringify(mesas));document.getElementById('modalMesas').style.display='none';document.getElementById('mesaAtual').innerText=mesaAtualNome;document.getElementById('pessoasAtual').innerText=pessoasAtual;atualizarCarrinho();alert('Pedido recuperado da mesa '+id+' - Pode pagar ou adicionar mais itens')}}
-function confirmarPessoas(){let p=parseInt(document.getElementById('inputPessoas').value)||2;mesaSelecionada.ocupada=true;mesaSelecionada.pessoas=p;mesaSelecionada.pedido={itens:[...carrinho],total:carrinho.reduce((s,c)=>s+c.subtotal,0)};localStorage.setItem('myblle_mesas',JSON.stringify(mesas));mesaAtualNome=mesaSelecionada.id;pessoasAtual=p;document.getElementById('mesaAtual').innerText=mesaAtualNome;document.getElementById('pessoasAtual').innerText=pessoasAtual;carrinho=[];atualizarCarrinho();document.getElementById('modalMesas').style.display='none';document.getElementById('boxPessoas').style.display='none';alert('Pedido segurado na mesa '+mesaAtualNome+' - '+p+' pessoas')}
-function pagar(){let total=carrinho.length?carrinho.reduce((s,c)=>s+c.subtotal,0):0;if(total==0)return alert('Carrinho vazio!');let w=window.open('','_blank');w.document.write(`<div style="font-family:monospace;padding:20px"><h2 style="color:#0f172a">MYBLLE MATOLA</h2><p>Mesa ${mesaAtualNome} - ${pessoasAtual} pessoas - ${new Date().toLocaleString()}</p><hr>${carrinho.map(c=>`${c.nome} x${c.qtd}=MZN ${c.subtotal}`).join('<br>')}<hr><b>Total MZN ${total}</b><br><br><p>Obrigado pela preferência!</p></div>`);w.print();carrinho=[];atualizarCarrinho()}
-</script></body></html>
+# Permissões do Ecossistema Android para Hardware Comercial
+android.permissions = CAMERA, BLUETOOTH, BLUETOOTH_ADMIN, INTERNET, WRITE_EXTERNAL_STORAGE
+
+orientation = landscape
+fullscreen = 1
+android.archs = armeabi-v7a, arm64-v8a
+android.allow_backup = True
+
+[buildozer]
+log_level = 2
+warn_on_root = 1
+"""
+    with open("buildozer.spec", "w", encoding="utf-8") as f:
+        f.write(conteudo_spec)
+    print("[BUILDOZER] Ficheiro 'buildozer.spec' gerado com sucesso para compilação .APK.")
+
+# =====================================================================
+# 3. PILAR WEB CENTRAL: SERVIDOR API (Flask)
+# =====================================================================
+from flask import Flask, request, jsonify
+
+app = Flask(__name__)
+
+@app.route('/api/login', methods=['POST'])
+def api_login():
+    dados = request.json or {}
+    utilizador = dados.get("utilizador")
+    senha = dados.get("senha")
+    
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT u.perfil, f.nome, f.data_expiracao, f.estado_licenca, f.id 
+        FROM utilizadores u 
+        JOIN filiais f ON u.filial_id = f.id 
+        WHERE u.username=? AND u.password=?
+    """, (utilizador, senha))
+    user = cursor.fetchone()
+    conn.close()
+    
+    if user:
+        perfil, filial_nome, data_exp, estado, filial_id = user
+        hoje = datetime.now().strftime("%Y-%m-%d")
+        
+        # Bloqueio Crítico de Mensalidade SaaS
+        if hoje > data_exp or estado == 'Expirada':
+            return jsonify({
+                "status": "bloqueado", 
+                "mensagem": "Acesso Bloqueado: Mensalidade em Atraso de Meticais! Contacte o Dono do Software."
+            }), 403
+            
+        return jsonify({
+            "status": "sucesso", "perfil": perfil, "filial": filial_nome, "filial_id": filial_id
+        })
+    return jsonify({"status": "erro", "mensagem": "Credenciais Inválidas em Moçambique."}), 401
+
+@app.route('/api/caixa/venda', methods=['POST'])
+def registar_venda_api():
+    dados = request.json or {}
+    filial_id = dados.get("filial_id")
+    operador = dados.get("operador")
+    total = dados.get("total")
+    metodo = dados.get("metodo_pagamento") # M-Pesa, e-Mola, Dinheiro, POS
+    itens = dados.get("itens", [])
+    
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    
+    agora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    cursor.execute("INSERT INTO vendas (filial_id, operador, total, metodo_pagamento, data_hora) VALUES (?, ?, ?, ?, ?)",
+                   (filial_id, operador, total, metodo, agora))
+    
+    # Abate de stock por artigo vendido na filial
+    for item in itens:
+        prod_id = item.get("produto_id")
+        qtd = item.get("quantidade")
+        cursor.execute("UPDATE produtos SET stock_atual = stock_atual - ? WHERE id = ? AND filial_id = ?", 
+                       (qtd, prod_id, filial_id))
+        
+    conn.commit()
+    conn.close()
+    return jsonify({"status": "sucesso", "mensagem": "Venda integrada e armazenada na nuvem."})
+
+@app.route('/api/admin/mensalidades', methods=['GET'])
+def listar_mensalidades():
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute("SELECT nome, pacote, valor_mensalidade, data_expiracao, estado_licenca FROM filiais")
+    lojas = cursor.fetchall()
+    conn.close()
+    
+    resultado = []
+    for loja in lojas:
+        resultado.append({
+            "loja": loja[0], "pacote": loja[1], "mensalidade": f"{loja[2]:,.2f} MT", "expira": loja[3], "estado": loja[4]
+        })
+    return jsonify(resultado)
+
+# =====================================================================
+# 4. PILAR MOBILE TÁTIL: INTERFACE GRÁFICA (Kivy)
+# =====================================================================
+# Condicional para permitir rodar o servidor headless em VPS ou abrir a GUI localmente
+try:
+    from kivy.app import App
+    from kivy.uix.boxlayout import BoxLayout
+    from kivy.uix.button import Button
+    from kivy.uix.label import Label
+    from kivy.uix.gridlayout import GridLayout
+    from kivy.uix.textinput import TextInput
+    KIVY_LOADED = True
+except ImportError:
+    KIVY_LOADED = False
+
+if KIVY_LOADED:
+    class FrenteCaixaKivy(BoxLayout):
+        def __init__(self, **kwargs):
+            super().__init__(orientation='vertical', padding=15, spacing=10, **kwargs)
+            
+            # Cabeçalho do Terminal Android
+            self.add_widget(Label(text="MZN MOBILE POS - FRENTE DE CAIXA TÁTIL", size_hint_y=0.1, font_size=20))
+            
+            # Corpo Principal dividido em duas secções (Produtos à esquerda, Carrinho à direita)
+            corpo = BoxLayout(orientation='horizontal', spacing=15)
+            
+            # Grelha Tátil de Artigos (Esquerda)
+            grelha_esquerda = BoxLayout(orientation='vertical', size_hint_x=0.6)
+            grelha_esquerda.add_widget(Label(text="Catálogo de Artigos (Toque para Adicionar)", size_hint_y=0.1))
+            
+            self.grelha_produtos = GridLayout(cols=2, spacing=10)
+            self.carregar_catalogo_loja()
+            grelha_esquerda.add_widget(self.grelha_produtos)
+            
+            # Painel do Carrinho e Caixa de Texto (Direita)
+            painel_direito = BoxLayout(orientation='vertical', size_hint_x=0.4, spacing=10)
+            self.lbl_carrinho = Label(text="Carrinho de Compras Vazio\n\nTotal: 0.00 MT", font_size=18, halign='center')
+            painel_direito.add_widget(self.lbl_carrinho)
+            
+            # Métodos de Pagamento Nacionais Rápidos
+            
