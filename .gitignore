@@ -1,15 +1,4 @@
-# Bases de dados locais (Não enviar para o GitHub!)
-*.db
-*.db-journal
-
-# Python e Compilação
 __pycache__/
 *.pyc
-.buildozer/
-bin/
-*.apk
-
-# Ambientes virtuais
-env/
 venv/
 .env
