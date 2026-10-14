@@ -1,81 +1,162 @@
 <!DOCTYPE html>
 <html lang="pt">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Myblle - Software POS SaaS</title>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Myblle PRO - SaaS POS</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:Arial}
 body{background:#0f172a;color:white}
-.header{background:#1e293b;padding:15px;display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #3b82f6}
-.logo{font-size:24px;font-weight:bold;color:#3b82f6}
-.logo span{color:white}
-.card{background:#1e293b;margin:15px;padding:20px;border-radius:12px;border:1px solid #334155}
-.btn{background:#3b82f6;color:white;padding:12px 20px;border:none;border-radius:8px;width:100%;font-weight:bold;margin-top:10px;cursor:pointer}
-.btn-green{background:#10b981}
-.input{width:100%;padding:12px;margin:8px 0;border-radius:8px;border:1px solid #334155;background:#0f172a;color:white}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.header{background:#1e293b;padding:15px;display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #3b82f6;position:sticky;top:0;z-index:10}
+.logo{font-size:22px;font-weight:bold;color:#3b82f6}.logo span{color:white}
+.card{background:#1e293b;margin:12px;padding:16px;border-radius:12px;border:1px solid #334155}
+.btn{background:#3b82f6;color:white;padding:12px;border:none;border-radius:8px;width:100%;font-weight:bold;margin-top:8px;cursor:pointer}
+.btn-green{background:#10b981}.btn-red{background:#ef4444}.btn-small{width:auto;padding:8px 12px;font-size:12px;display:inline-block}
+.input{width:100%;padding:12px;margin:6px 0;border-radius:8px;border:1px solid #334155;background:#0f172a;color:white}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .price{color:#10b981;font-weight:bold}
-.badge{background:#3b82f6;padding:4px 8px;border-radius:20px;font-size:12px}
+.badge{background:#3b82f6;padding:4px 8px;border-radius:20px;font-size:11px}
+#loginScreen{position:fixed;inset:0;background:#0f172a;z-index:100;display:flex;align-items:center;justify-content:center;padding:20px}
+.tabs{display:flex;gap:6px;margin:12px}.tab{flex:1;padding:10px;background:#1e293b;border:1px solid #334155;border-radius:8px;text-align:center;cursor:pointer}.tab.active{background:#3b82f6}
+.hidden{display:none!important}
+@media print{body *{visibility:hidden} #reciboPrint, #reciboPrint *{visibility:visible} #reciboPrint{position:absolute;left:0;top:0;width:100%;background:white;color:black;padding:20px}}
 </style>
 </head>
 <body>
+
+<div id="loginScreen">
+<div class="card" style="width:100%;max-width:350px">
+<h2 style="text-align:center;color:#3b82f6">Myblle PRO</h2>
+<p style="text-align:center;color:#94a3b8;margin:10px 0">Login do Sistema</p>
+<input class="input" id="user" placeholder="Usuário: admin" value="admin">
+<input class="input" id="pass" type="password" placeholder="Senha: myblle123" value="myblle123">
+<button class="btn" onclick="fazerLogin()">Entrar no POS</button>
+<p style="font-size:11px;color:#64748b;margin-top:10px;text-align:center">Dica: admin / myblle123</p>
+<p id="loginErro" style="color:#ef4444;text-align:center;margin-top:8px"></p>
+</div>
+</div>
+
 <div class="header">
-<div class="logo">My<span>blle</span></div>
-<div class="badge">MOZAMBIQUE MZN</div>
+<div class="logo">My<span>blle</span> PRO</div>
+<div style="display:flex;gap:6px;align-items:center">
+<span class="badge">MZN</span>
+<button class="btn-small btn-red" onclick="logout()" style="border:none;border-radius:6px;color:white">Sair</button>
+</div>
 </div>
 
 <div class="card">
-<h3>🔵 Myblle POS - ONLINE</h3>
-<p style="color:#94a3b8;margin:10px 0">SaaS para Lojas e Supermercados</p>
-<div class="grid">
-<div style="background:#0f172a;padding:10px;border-radius:8px;text-align:center">
-<div style="font-size:20px">3</div><small>Filiais</small></div>
-<div style="background:#0f172a;padding:10px;border-radius:8px;text-align:center">
-<div style="font-size:20px" class="price">MZN 45.250</div><small>Vendas Hoje</small></div>
+<h3>🔵 Myblle POS - ONLINE <span style="font-size:12px;color:#10b981">● PRO</span></h3>
+<div class="grid2" style="margin-top:10px">
+<div style="background:#0f172a;padding:10px;border-radius:8px;text-align:center"><div style="font-size:18px" id="totalFiliais">3</div><small>Filiais</small></div>
+<div style="background:#0f172a;padding:10px;border-radius:8px;text-align:center"><div style="font-size:16px" class="price" id="vendasHoje">MZN 0</div><small>Vendas Hoje</small></div>
 </div>
 </div>
 
+<div class="tabs">
+<div class="tab active" onclick="mostrarTab('venda')" id="tabVenda">💰 Venda</div>
+<div class="tab" onclick="mostrarTab('produtos')" id="tabProdutos">📦 Produtos</div>
+<div class="tab" onclick="mostrarTab('relatorio')" id="tabRel">📊 Relatorio</div>
+</div>
+
+<div id="tabV">
 <div class="card">
 <h3>💰 Nova Venda</h3>
+<select class="input" id="selectProd" onchange="preencherProd()"><option value="">Escolha produto cadastrado ou digite abaixo</option></select>
 <input class="input" id="prod" placeholder="Produto (ex: Arroz 1kg)">
 <input class="input" id="preco" type="number" placeholder="Preço MZN">
-<input class="input" id="qtd" type="number" value="1" placeholder="Qtd">
+<input class="input" id="qtd" type="number" value="1">
 <button class="btn btn-green" onclick="vender()">Vender - Adicionar ao Carrinho</button>
-<div id="carrinho" style="margin-top:15px"></div>
+<div id="carrinho" style="margin-top:12px"></div>
 <h2 id="total" style="margin-top:10px" class="price">Total: MZN 0</h2>
-<button class="btn" onclick="finalizar()">✅ Finalizar Venda e Imprimir Recibo</button>
+<button class="btn" onclick="finalizar()">✅ Finalizar e Imprimir Recibo</button>
 </div>
+</div>
+
+<div id="tabP" class="hidden">
+<div class="card">
+<h3>📦 Cadastrar Produto (Banco de Dados)</h3>
+<input class="input" id="pNome" placeholder="Nome do produto">
+<input class="input" id="pPreco" type="number" placeholder="Preço MZN">
+<input class="input" id="pStock" type="number" placeholder="Estoque">
+<button class="btn btn-green" onclick="salvarProduto()">Salvar Produto no Banco</button>
+<div id="listaProd" style="margin-top:15px"></div>
+</div>
+</div>
+
+<div id="tabR" class="hidden">
+<div class="card">
+<h3>📊 Relatório & Domínio</h3>
+<p style="color:#94a3b8;font-size:13px">Vendas salvas no banco de dados Render</p>
+<div id="relatorio" style="margin-top:10px"></div>
+<div style="margin-top:20px;background:#0f172a;padding:12px;border-radius:8px">
+<h4>🌐 Domínio Próprio</h4>
+<p style="font-size:12px;color:#94a3b8;margin-top:6px">1. Compre myblle.co.mz<br>2. Render > Settings > Custom Domain<br>3. Add: www.myblle.co.mz<br>4. Copie o CNAME que o Render mostrar</p>
+<p style="font-size:12px;color:#10b981;margin-top:8px">Atual: https://myblle.onrender.com</p>
+</div>
+</div>
+</div>
+
+<div id="reciboPrint" style="display:none"></div>
 
 <div class="card">
 <h3>🏬 Filiais Ativas</h3>
-<p>📍 Nampula - Matriz (ON)</p>
-<p>📍 Maputo - Filial 1 (ON)</p>
-<p>📍 Beira - Filial 2 (ON)</p>
-<p style="margin-top:10px;color:#10b981">● Servidor Render Online: https://myblle.onrender.com</p>
+<p style="font-size:13px">📍 Nampula - Matriz (ON) - Admin</p>
+<p style="font-size:13px">📍 Maputo - Filial 1 (ON)</p>
+<p style="font-size:13px">📍 Beira - Filial 2 (ON)</p>
 </div>
 
 <script>
-let total=0
-let car=[]
+let total=0, carrinho=[], logado=false
+let API = location.origin
+async function fazerLogin(){
+ let u=document.getElementById('user').value, p=document.getElementById('pass').value
+ try{
+  let r=await fetch(API+'/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user:u,pass:p})})
+  if(r.ok){document.getElementById('loginScreen').style.display='none';logado=true;carregarTudo()}
+  else{throw ''}
+ }catch{ document.getElementById('loginErro').innerText='Senha errada! Use admin / myblle123' }
+}
+function logout(){document.getElementById('loginScreen').style.display='flex'}
+function mostrarTab(t){
+ document.getElementById('tabV').classList.add('hidden');document.getElementById('tabP').classList.add('hidden');document.getElementById('tabR').classList.add('hidden')
+ document.getElementById('tabVenda').classList.remove('active');document.getElementById('tabProdutos').classList.remove('active');document.getElementById('tabRel').classList.remove('active')
+ if(t=='venda'){document.getElementById('tabV').classList.remove('hidden');document.getElementById('tabVenda').classList.add('active')}
+ if(t=='produtos'){document.getElementById('tabP').classList.remove('hidden');document.getElementById('tabProdutos').classList.add('active');listarProdutos()}
+ if(t=='relatorio'){document.getElementById('tabR').classList.remove('hidden');document.getElementById('tabRel').classList.add('active');carregarRelatorio()}
+}
+async function salvarProduto(){
+ let nome=document.getElementById('pNome').value, preco=parseFloat(document.getElementById('pPreco').value), stock=parseInt(document.getElementById('pStock').value)||0
+ if(!nome||!preco)return alert('Preencha nome e preço')
+ await fetch(API+'/api/produtos',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nome,preco,stock})})
+ alert('✅ Produto salvo no banco!');document.getElementById('pNome').value='';document.getElementById('pPreco').value='';listarProdutos()
+}
+async function listarProdutos(){
+ let r=await fetch(API+'/api/produtos');let prods=await r.json()
+ let html='';let sel='<option value="">Escolha produto cadastrado ou digite abaixo</option>'
+ prods.forEach(p=>{html+=`<div style="background:#0f172a;padding:8px;margin:4px 0;border-radius:6px;display:flex;justify-content:space-between"><span>${p.nome}</span><span class="price">MZN ${p.preco}</span></div>`; sel+=`<option value="${p.id}" data-nome="${p.nome}" data-preco="${p.preco}">${p.nome} - MZN ${p.preco}</option>`})
+ document.getElementById('listaProd').innerHTML=html||'<p style="color:#64748b">Nenhum produto</p>';document.getElementById('selectProd').innerHTML=sel
+}
+function preencherProd(){let s=document.getElementById('selectProd');let o=s.options[s.selectedIndex];if(o.dataset.nome){document.getElementById('prod').value=o.dataset.nome;document.getElementById('preco').value=o.dataset.preco}}
+async function carregarTudo(){listarProdutos();carregarStatus()}
+async function carregarStatus(){try{let r=await fetch(API+'/api/status');let d=await r.json();document.getElementById('vendasHoje').innerText='MZN '+(d.vendas_hoje||0)}catch{}}
 function vender(){
- let p=document.getElementById('prod').value
- let pr=parseFloat(document.getElementById('preco').value)||0
- let q=parseInt(document.getElementById('qtd').value)||1
+ let p=document.getElementById('prod').value, pr=parseFloat(document.getElementById('preco').value)||0, q=parseInt(document.getElementById('qtd').value)||1
  if(!p||!pr)return alert('Preencha produto e preço')
- let sub=pr*q
- car.push({p,pr,q,sub})
- total+=sub
- document.getElementById('carrinho').innerHTML+=`<div style="background:#0f172a;padding:8px;margin:5px 0;border-radius:6px;display:flex;justify-content:space-between"><span>${p} x${q}</span><span class="price">MZN ${sub}</span></div>`
- document.getElementById('total').innerText='Total: MZN '+total
- document.getElementById('prod').value='';document.getElementById('preco').value=''
+ let sub=pr*q;total+=sub;carrinho.push({p,pr,q,sub})
+ document.getElementById('carrinho').innerHTML+=`<div style="background:#0f172a;padding:8px;margin:4px 0;border-radius:6px;display:flex;justify-content:space-between"><span>${p} x${q}</span><span class="price">MZN ${sub}</span></div>`
+ document.getElementById('total').innerText='Total: MZN '+total;document.getElementById('prod').value='';document.getElementById('preco').value=''
 }
-function finalizar(){
+async function finalizar(){
  if(total==0)return alert('Carrinho vazio')
- alert('✅ Venda Finalizada!\nTotal MZN '+total+'\nRecibo Myblle enviado!\nObrigado!')
- car=[];total=0;document.getElementById('carrinho').innerHTML='';document.getElementById('total').innerText='Total: MZN 0'
+ let itens=carrinho.map(c=>`${c.p} x${c.q} = MZN ${c.sub}`).join('<br>')
+ let recibo=`<div style="padding:20px"><h2 style="text-align:center">MYBLLE - RECIBO</h2><p style="text-align:center">Nampula - Matriz<br>${new Date().toLocaleString()}</p><hr><p>${itens}</p><hr><h3>Total: MZN ${total}</h3><p style="text-align:center;margin-top:20px">Obrigado pela compra!<br>www.myblle.onrender.com</p></div>`
+ document.getElementById('reciboPrint').innerHTML=recibo;document.getElementById('reciboPrint').style.display='block'
+ try{await fetch(API+'/api/vendas',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({total,itens:carrinho})})}catch{}
+ setTimeout(()=>{window.print();document.getElementById('reciboPrint').style.display='none';total=0;carrinho=[];document.getElementById('carrinho').innerHTML='';document.getElementById('total').innerText='Total: MZN 0';carregarStatus()},300)
 }
-fetch('/api/status').then(r=>r.json()).then(d=>console.log('API:',d))
+async function carregarRelatorio(){
+ let r=await fetch(API+'/api/status');let d=await r.json()
+ document.getElementById('relatorio').innerHTML=`<div style="background:#0f172a;padding:10px;border-radius:8px"><p>Total vendas: ${d.total_vendas||0}</p><p class="price">Faturamento: MZN ${d.vendas_hoje||0}</p></div>`
+}
 </script>
 </body>
-  </html>
+ </html>
