@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, render_template, jsonify
 from flask_cors import CORS
 import os
 
@@ -7,16 +7,16 @@ CORS(app)
 
 @app.route('/')
 def home():
+    return render_template('index.html')
+
+@app.route('/api/status')
+def status():
     return jsonify({
         "app": "Myblle POS SaaS",
         "status": "online",
         "versao": "Mozambique MZN",
-        "mensagem": "Servidor no ar! Próximo passo: PDV bonito"
+        "filiais": "Nampula, Maputo, Beira"
     })
-
-@app.route('/api/teste')
-def teste():
-    return jsonify({"ok": True})
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))
