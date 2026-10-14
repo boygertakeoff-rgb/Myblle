@@ -1,99 +1,135 @@
-<!DOCTYPE html><html lang="pt"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Myblle Ultimate - All Features</title>
+<!DOCTYPE html><html lang="pt"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Myblle - Login Fix</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:Arial}
-body{background:#000;color:#222}
-.top{background:#d32f2f;color:#fff;padding:7px 10px;display:flex;justify-content:space-between;font-size:12px;position:sticky;top:0;z-index:20}
-.cat-bar{background:#fff;display:flex;gap:5px;overflow-x:auto;padding:6px;border-bottom:1px solid #ddd;font-size:11px}
-.cat{padding:5px 12px;background:#f5f5f5;border:1px solid #ddd;border-radius:20px;white-space:nowrap;cursor:pointer}.cat.active{background:#d32f2f;color:#fff}
-.layout{display:flex;height:calc(100vh - 65px)}
-.left{width:80px;background:#e0e0e0;text-align:center;font-size:10px;padding:6px}
-.center{flex:1;background:#fff;overflow:auto;padding:8px;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;align-content:start}
-.prod{border:1px solid #eee;border-radius:8px;padding:6px;text-align:center;cursor:pointer;background:#fff}.prod:hover{border-color:#d32f2f}
-.right{width:340px;background:#fafafa;border-left:1px solid #ddd;display:flex;flex-direction:column}
-.cart{flex:1;overflow:auto;padding:8px;font-size:12px}
-.bottom{background:#2c2c2c;color:#fff;display:flex;padding:6px;font-size:11px}.bottom div{flex:1}
-.btn{border:none;padding:8px;border-radius:6px;cursor:pointer;font-weight:bold;font-size:12px}.btn-red{background:#d32f2f;color:#fff}.btn-green{background:#4caf50;color:#fff}.btn-blue{background:#1976d2;color:#fff}
-.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:100}
-.card{background:#fff;padding:12px;border-radius:10px;width:96%;max-width:650px;max-height:92vh;overflow:auto;font-size:12px}
-.input{width:100%;padding:8px;margin:4px 0;border:1px solid #ccc;border-radius:6px}
-.mesa-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}.mesa{padding:10px;border-radius:6px;text-align:center;color:#fff;cursor:pointer;font-weight:bold;font-size:11px}.livre{background:#2196f3}.ocupada{background:#f44336}
-.mod{display:inline-block;padding:5px 10px;background:#fff3e0;border:1px solid #ffcc80;border-radius:20px;font-size:11px;margin:3px;cursor:pointer}.mod.active{background:#ff9800;color:#fff}
-.keypad{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}.key{padding:10px;background:#eee;text-align:center;border-radius:6px;cursor:pointer;font-size:12px}
-.grid6{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}.mitem{border:1px solid #eee;border-radius:8px;padding:8px;text-align:center;cursor:pointer;background:#fff;font-size:11px}
-#login{position:fixed;inset:0;background:#0f172a;z-index:999;display:flex;align-items:center;justify-content:center}.login-card{background:#1e293b;padding:20px;border-radius:12px;width:90%;max-width:340px;color:#fff}
-.hidden{display:none}
+body{background:#f5f5f5}
+#loginScreen{position:fixed;inset:0;background:#0f172a;z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px}
+.loginBox{background:#1e293b;padding:25px;border-radius:12px;width:100%;max-width:360px;border:1px solid #334155}
+.input{width:100%;padding:12px;margin:6px 0;border:1px solid #334155;border-radius:8px;background:#0f172a;color:white;font-size:14px}
+.btn{width:100%;padding:12px;border:none;border-radius:8px;font-weight:bold;cursor:pointer;margin-top:8px;font-size:14px}
+.btn-red{background:#d32f2f;color:white}.btn-blue{background:#1976d2;color:white}
+.top{background:#d32f2f;color:white;padding:10px;display:flex;justify-content:space-between;font-size:13px}
+.cat-bar{background:white;display:flex;gap:6px;overflow-x:auto;padding:8px;border-bottom:1px solid #ddd}
+.cat{padding:6px 14px;background:#f5f5f5;border:1px solid #ddd;border-radius:20px;white-space:nowrap;cursor:pointer;font-size:12px}.cat.active{background:#d32f2f;color:white}
+.main{display:flex;height:calc(100vh - 80px)}
+.center{flex:1;background:white;padding:10px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;overflow:auto;align-content:start}
+.prod{border:1px solid #eee;border-radius:8px;padding:10px;text-align:center;cursor:pointer;background:white}
+.right{width:320px;background:#fafafa;border-left:1px solid #ddd;display:flex;flex-direction:column}
+.cart{flex:1;overflow:auto;padding:10px;font-size:12px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:none;align-items:center;justify-content:center;z-index:100}
+.card{background:white;padding:15px;border-radius:10px;width:95%;max-width:600px;max-height:90vh;overflow:auto}
+.mesa-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.mesa{padding:15px;border-radius:8px;text-align:center;color:white;font-weight:bold;cursor:pointer}.livre{background:#2196f3}.ocupada{background:#f44336}
+.yellow{background:yellow;padding:4px 8px;font-weight:bold;font-size:12px;display:inline-block;margin:5px 0}
+.hidden{display:none!important}
 </style></head><body>
-<div id="login"><div class="login-card"><h2 style="text-align:center;color:#ef5350">Myblle ULTIMATE<br><small style="font-size:11px">Matola - Todas funcionalidades</small></h2><input class="input" id="u" value="admin"><input class="input" id="p" type="password" value="myblle123"><button class="btn btn-red" style="width:100%" onclick="login()">Entrar</button><p style="font-size:10px;color:#94a3b8;text-align:center;margin-top:6px">admin / myblle123</p></div></div>
 
-<div class="top"><div>💰 Myblle - Menu - Categories no topo, Produtos embaixo - Modifier - Table - Kitchen</div><div>QR | Member | Help</div></div>
-<div class="cat-bar" id="catBar"></div>
-<div class="layout">
-<div class="left">🔍 Barcode<br><br><div id="qtdL"></div><br><button class="btn btn-blue" style="font-size:10px" onclick="openSettings()">⚙️ Table Setting</button></div>
+<!-- LOGIN QUE FUNCIONA - NA FRENTE DE TUDO -->
+<div id="loginScreen">
+<div class="loginBox">
+<h2 style="text-align:center;color:#ef5350;margin-bottom:5px">Myblle Matola</h2>
+<p style="text-align:center;color:#94a3b8;font-size:12px;margin-bottom:15px">How to set table setting - Login</p>
+<input class="input" id="userInput" placeholder="Usuário" value="admin">
+<input class="input" id="passInput" type="password" placeholder="Senha" value="myblle123">
+<button class="btn btn-red" onclick="fazerLogin()">🔓 ENTRAR</button>
+<p style="color:#94a3b8;font-size:11px;text-align:center;margin-top:10px">
+admin / myblle123 = Admin (tudo)<br>
+caixa / caixa123 = Caixa (só venda)
+</p>
+<p id="loginErro" style="color:#ef4444;text-align:center;font-size:12px;margin-top:8px"></p>
+<button class="btn" style="background:#334155;color:white;font-size:11px" onclick="limparTudo()">🗑️ Se não entra, clique aqui pra limpar cache</button>
+</div>
+</div>
+
+<div class="top"><div>💰 Myblle - <span id="userLogado">-</span> - Matola</div><div><button onclick="sair()" style="background:white;border:none;padding:4px 10px;border-radius:4px">Sair</button></div></div>
+<div class="cat-bar"><div class="cat active">Combo</div><div class="cat">BEER</div><div class="cat">DRINKS</div><div class="cat" id="btnSettings" onclick="openSettings()" style="background:#e3f2fd">⚙️ Settings - Table Setting</div></div>
+
+<div class="main">
 <div class="center" id="prodGrid"></div>
 <div class="right">
-<div style="padding:6px;border-bottom:1px solid #ddd;display:flex;justify-content:space-between"><span>Table: <b id="curTable">-</b></span><span>Guests: <b id="curGuest">-</b> | <b id="curMember">No member</b></span></div>
-<div class="cart" id="cart"></div>
-<div style="padding:6px;border-top:1px solid #ddd">
-<div style="display:flex;justify-content:space-between;font-weight:bold"><span>Total:</span><span id="total">MZN 0</span><span id="disc" style="color:#4caf50"></span></div>
-<div class="grid6" style="margin-top:6px">
-<div class="mitem" onclick="holdTable()">🪑 Hold</div>
-<div class="mitem" onclick="retrieveTable()">↩️ Retrieve</div>
-<div class="mitem" onclick="changeTable()">🔄 Change Table</div>
-<div class="mitem" onclick="combineTable()">🔗 Combine</div>
-<div class="mitem" onclick="cancelItem()">❌ Cancel Item - select which item to cancel - kitchen will know</div>
-<div class="mitem" onclick="openCashbox()">🗄️ Open Cashbox</div>
-<div class="mitem" onclick="openMember()">👤 Member - Top up RM100 free RM10 - voucher</div>
-<div class="mitem" onclick="openStock()">📦 Stocktake - select item enter quantity OK Next Submit</div>
-<div class="mitem" onclick="openReport()">📊 Sales Report - quantity sold</div>
-<div class="mitem" onclick="openHandover()">💰 Handover - Cash out</div>
-<div class="mitem" onclick="qrOrder()">📱 QR Order - scan QR</div>
-<div class="mitem" onclick="openIncome()">💵 Income/Expense</div>
-</div>
-<button class="btn btn-red" style="width:100%;margin-top:8px" onclick="pay()">PAY - Cash / TNG / Boost / Eftpos - Touch and Go</button>
+<div style="padding:8px;border-bottom:1px solid #ddd"><b>Table: <span id="curTable">-</span> | Guests: <span id="curGuest">-</span></b></div>
+<div class="cart" id="cart"><div style="color:#999;text-align:center;margin-top:20px">First make an order</div></div>
+<div style="padding:10px;border-top:1px solid #ddd">
+<div style="display:flex;justify-content:space-between;font-weight:bold"><span>Total:</span><span id="total">MZN 0</span></div>
+<div class="yellow">Click hold to hold the order to a table</div>
+<button class="btn btn-blue" onclick="holdOrder()">HOLD</button>
+<div class="yellow">To retrieve order from table, click retrieve</div>
+<button class="btn btn-red" onclick="retrieveOrder()">RETRIEVE</button>
+<button class="btn" style="background:#333;color:white" onclick="pay()">PAY</button>
 </div>
 </div>
 </div>
-<div class="bottom"><div><span id="bNo">0</span><br>No.</div><div>Amount<br><b id="bAmt">MZN 0</b></div><div style="text-align:center"><button style="background:#666;color:#fff;border:none;padding:5px 10px;border-radius:4px" onclick="retrieveTable()">RETRIEVE</button> <button style="background:#d32f2f;color:#fff;border:none;padding:5px 10px;border-radius:4px" onclick="pay()">Pay <span id="payBtn">0</span></button></div><div style="text-align:right">Points: <span id="pts">0</span></div></div>
 
-<!-- MODIFIER -->
-<div id="modModal" class="modal"><div class="card"><h3 id="modName"></h3><p style="font-size:11px;color:#666">So up here you can see all the categories - By default first price bar - You can select modifiers: Less spicy / Add meat / Less sugar / Less ice</p><div id="modList"></div><div style="display:flex;gap:6px;margin-top:8px"><button class="btn" onclick="modQty(-1)">-</button><span id="modQ" style="padding:8px">1</span><button class="btn" onclick="modQty(1)">+</button><button class="btn btn-red" style="flex:1" onclick="addWithMod()">Add - Press the picture - After customer order choose table</button></div></div></div>
+<div id="setModal" class="modal"><div class="card">
+<h3>How to set table setting - Go to settings, table number setting</h3>
+<div class="yellow">Click add area</div>
+<div style="display:flex;justify-content:space-between;margin:10px 0"><h4>Table Management</h4><button class="btn" style="width:auto;background:#4caf50;color:white" onclick="showAdd()">+ Add Area</button></div>
+<table border="1" style="width:100%;border-collapse:collapse;font-size:12px"><tr style="background:#f5f5f5"><th>Area</th><th>Prefix</th><th>Num</th><th>Del</th></tr><tbody id="areaList"></tbody></table>
+<div id="addBox" style="border:2px solid #4caf50;padding:10px;margin-top:10px">
+<div class="yellow">Enter the area name, table prefix and number of tables</div>
+<input class="input" style="background:white;color:black;border:1px solid #ccc" id="aName" placeholder="Salão" value="Salão">
+<input class="input" style="background:white;color:black;border:1px solid #ccc" id="aPref" placeholder="A" value="A">
+<input class="input" style="background:white;color:black;border:1px solid #ccc" id="aNum" type="number" placeholder="10" value="10">
+<button class="btn" style="background:#4caf50;color:white" onclick="generate()">Generate - Click generate</button>
+<div class="yellow">It will display the tables - You can delete unwanted table also</div>
+<div id="preview" style="max-height:150px;overflow:auto;border:1px solid #eee;margin:6px 0;padding:5px"></div>
+<div class="yellow">Don't forget to click save</div>
+<button class="btn btn-blue" onclick="saveAreas()">💾 SAVE</button>
+</div>
+<button class="btn" style="background:#333;color:white" onclick="document.getElementById('setModal').style.display='none'">FECHAR - Try it in front-end</button>
+</div></div>
 
-<!-- TABLE -->
-<div id="tableModal" class="modal"><div class="card" style="max-width:650px"><h3 id="tTitle">Select table - Table No.</h3><div class="mesa-grid" id="mesaGrid"></div><div id="guestBox" class="hidden" style="margin-top:10px"><input class="input" id="guestInput" type="number" value="2" placeholder="Number of guest"><button class="btn btn-red" style="width:100%" onclick="confirmGuest()">Confirm - Enter number of guest for that table</button></div><button class="btn" style="width:100%;margin-top:6px;background:#eee" onclick="closeModal('tableModal')">Close</button></div></div>
-
-<!-- PAY -->
-<div id="payModal" class="modal"><div class="card"><h3>Pay - We can pay by cash TNG Boost and etc</h3><p>Total: <b id="payTotal"></b> | Member discount auto applied | Points: <span id="payPts"></span></p><div class="keypad"><div class="key" onclick="payType('Cash')">💵 Cash</div><div class="key" onclick="payType('TNG')">📱 Touch N Go</div><div class="key" onclick="payType('Boost')">🚀 Boost</div><div class="key" onclick="payType('Eftpos')">💳 Eftpos</div><div class="key" onclick="setPay('50')">50</div><div class="key" onclick="setPay('100')">100</div><div class="key" onclick="setPay('200')">200</div><div class="key" onclick="setPay('exact')">Exact</div></div><input class="input" id="payRecv" placeholder="Received - Cash"><div id="payChange" style="font-weight:bold;color:#d32f2f"></div><button class="btn btn-green" style="width:100%;margin-top:6px" onclick="confirmPay()">CONFIRM - Bill printed</button></div></div>
-
-<!-- SETTINGS TABLE -->
-<div id="setModal" class="modal"><div class="card" style="max-width:700px"><h3>How to set table setting - Go to settings, table number setting</h3><div style="display:flex;justify-content:space-between"><span>Table Management</span><button class="btn btn-green" onclick="showAddArea()">+ Add Area - Click add area</button></div><table style="width:100%;margin-top:8px;border-collapse:collapse"><tr style="background:#f5f5f5"><th>Area</th><th>Prefix</th><th>Num</th><th>Action</th></tr><tbody id="areaTbl"></tbody></table><div id="addAreaBox" class="hidden" style="border:1px solid #ddd;padding:8px;margin-top:8px"><p>Enter the area name, table prefix and number of tables</p><input class="input" id="aName" placeholder="Salão"><input class="input" id="aPref" placeholder="A"><input class="input" id="aNum" type="number" placeholder="10"><button class="btn btn-green" onclick="genTables()">Generate - It will display the tables</button><div id="aPreview" style="max-height:200px;overflow:auto;margin-top:6px"></div><p>You can delete unwanted table also - Don't forget to click save</p><button class="btn btn-blue" style="width:100%" onclick="saveAreas()">Save</button></div><button class="btn" style="width:100%;background:#eee;margin-top:6px" onclick="closeModal('setModal')">Close - Try it in front-end</button></div></div>
-
-<!-- STOCKTAKE -->
-<div id="stockModal" class="modal"><div class="card"><h3>Stocktake - Click icon here, click Stocktake</h3><div id="stockGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;max-height:300px;overflow:auto"></div><div style="display:flex;gap:6px;margin-top:8px"><button class="btn" style="background:#eee;flex:1" onclick="clearStock()">Clear</button><button class="btn btn-red" style="flex:1" onclick="nextStock()">Next - Click next</button></div></div></div>
-<div id="stockQty" class="modal"><div class="card" style="max-width:300px"><h4 id="sqName"></h4><p>Select item, enter new quantity then click OK</p><input class="input" id="sqInput" type="number"><div class="keypad"><div class="key" onclick="sqAdd('1')">1</div><div class="key" onclick="sqAdd('2')">2</div><div class="key" onclick="sqAdd('3')">3</div><div class="key" onclick="sqAdd('4')">4</div><div class="key" onclick="sqAdd('5')">5</div><div class="key" onclick="sqAdd('6')">6</div><div class="key" onclick="sqAdd('7')">7</div><div class="key" onclick="sqAdd('8')">8</div><div class="key" onclick="sqAdd('9')">9</div><div class="key" onclick="closeModal('stockQty')">Cancel</div><div class="key" onclick="sqAdd('0')">0</div><div class="key btn-green" style="color:#fff" onclick="sqOk()">OK</div></div></div></div>
-
-<!-- MEMBER -->
-<div id="memberModal" class="modal"><div class="card"><h3>Member profile page - This is member profile page and is top up remaining wallet</h3><input class="input" id="mPhone" placeholder="Phone - ex 84xxxxxxx"><button class="btn btn-blue" onclick="searchMember()">Search / Create</button><div id="mInfo" style="margin-top:8px"></div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px"><button class="btn" onclick="topUp(100)">Top up RM200 will total RM220 into wallet</button><button class="btn" onclick="topUp(200)">Top up 200</button><button class="btn" onclick="topUp(50)">Top up 50</button></div><p style="font-size:11px;margin-top:6px">System we automatically applied discount when select member logged - like 10% discount - pay RM100 to get free RM10 - Member will receive points after payment - System will send voucher reward - Member transaction history</p><button class="btn" style="width:100%;background:#eee;margin-top:6px" onclick="closeModal('memberModal')">Close</button></div></div>
+<div id="tableModal" class="modal"><div class="card">
+<h3 id="tTitle">Select table</h3>
+<div class="yellow" id="tYellow">Select a table to hold order</div>
+<div class="mesa-grid" id="mesaGrid"></div>
+<div id="guestBox" style="display:none;margin-top:10px;background:#fff3e0;padding:10px;border-radius:6px">
+<div class="yellow">Enter number of guest for that table</div>
+<input class="input" style="background:white;color:black" id="guestInput" type="number" value="2" style="width:80px"><button class="btn btn-red" style="width:auto" onclick="confirmGuest()">Confirm</button>
+</div>
+<button class="btn" style="background:#eee;margin-top:10px" onclick="document.getElementById('tableModal').style.display='none'">Fechar</button>
+</div></div>
 
 <script>
-let produtos=JSON.parse(localStorage.getItem('myblle_prod')||'null')||[{id:1,nome:"Arroz 25kg",preco:1050,stock:50,cat:"Combo",mods:["Less spicy","Add meat"]},{id:2,nome:"Frango Grelhado",preco:450,stock:20,cat:"Main Items",mods:["Less spicy","Add cheese","Extra rice"]},{id:3,nome:"Matapa",preco:200,stock:30,cat:"Main Items",mods:["Less spicy","Add meat"]},{id:4,nome:"Coca-Cola",preco:80,stock:100,cat:"DRINKS",mods:["Less sugar","Less ice","No ice"]},{id:5,nome:"2M Beer",preco:120,stock:60,cat:"BEER",mods:["Cold","Very cold"]},{id:6,nome:"Xima",preco:150,stock:40,cat:"Combo",mods:["Less spicy"]}];
-let cats=["Combo","Pet use","MEMBER PROMO","Main Items","BEER","COMBO","DRINKS","SNACKS","Household","Health","FRESH JUICE"];
-let areas=JSON.parse(localStorage.getItem('myblle_areas')||'[]'),mesas=JSON.parse(localStorage.getItem('myblle_mesas')||'[]'),members=JSON.parse(localStorage.getItem('myblle_members')||'[]'),vendas=JSON.parse(localStorage.getItem('myblle_vendas')||'[]'),incomes=JSON.parse(localStorage.getItem('myblle_incomes')||'[]');
-let carrinho=[],curTable=null,curGuest=0,curMember=null,tempProd=null,tempMods=[],tempQty=1,selectedMesa=null,tempTables=[],changes=[],mode='hold';
+// LOGIN QUE FUNCIONA 100%
+const USERS={"admin":{pass:"myblle123",role:"admin",name:"Admin"},"caixa":{pass:"caixa123",role:"caixa",name:"Caixa"}};
+let currentUser=null;
+function fazerLogin(){
+let u=document.getElementById('userInput').value.toLowerCase().trim();
+let p=document.getElementById('passInput').value.trim();
+console.log('Tentando login',u,p);
+if(USERS[u] && USERS[u].pass===p){
+currentUser=USERS[u];
+document.getElementById('loginScreen').classList.add('hidden');
+document.getElementById('userLogado').innerText=currentUser.name+' ('+u+')';
+if(currentUser.role==='caixa'){document.getElementById('btnSettings').style.display='none'}
+initApp();
+}else{
+document.getElementById('loginErro').innerText='❌ Usuário ou senha errado! Use admin / myblle123';
+}
+}
+function sair(){document.getElementById('loginScreen').classList.remove('hidden');}
+function limparTudo(){localStorage.clear();alert('Cache limpo! Agora digite admin / myblle123 e clique ENTRAR');location.reload()}
+
+let produtos=[{id:1,nome:"Arroz 25kg",preco:1050},{id:2,nome:"Frango",preco:450},{id:3,nome:"Coca",preco:80},{id:4,nome:"Matapa",preco:200},{id:5,nome:"2M",preco:120}];
+let areas=JSON.parse(localStorage.getItem('myblle_areas')||'[]'),mesas=JSON.parse(localStorage.getItem('myblle_mesas')||'[]');
+let carrinho=[],selectedMesa=null,mode='hold',tempTables=[],curTable='-',curGuest=0;
+function initApp(){
 if(mesas.length==0){for(let i=1;i<=10;i++) mesas.push({id:"A"+i,area:"Salão",ocupada:false,pedido:null,guests:0}); localStorage.setItem('myblle_mesas',JSON.stringify(mesas));}
-function login(){document.getElementById('login').style.display='none';renderCats();renderProds("Combo");renderAreas();}
-function renderCats(){let h='';cats.forEach(c=>h+=`<div class="cat" onclick="renderProds('${c}')">${c}</div>`);document.getElementById('catBar').innerHTML=h}
-function renderProds(cat){document.querySelectorAll('.cat').forEach(e=>e.classList.toggle('active',e.innerText===cat));let list=produtos.filter(p=>p.cat===cat||cat==="Combo");let h='';list.forEach(p=>{h+=`<div class="prod" onclick="openMod(${p.id})"><div style="background:#f5f5f5;height:60px;display:flex;align-items:center;justify-content:center;border-radius:6px">🍛</div><div style="font-size:11px;font-weight:bold;margin-top:4px">${p.nome}</div><div style="font-size:11px;color:#4caf50">MZN ${p.preco} | Stock ${p.stock}</div></div>`});document.getElementById('prodGrid').innerHTML=h}
-function openMod(id){tempProd=produtos.find(p=>p.id===id);tempMods=[];tempQty=1;document.getElementById('modName').innerText=tempProd.nome;document.getElementById('modQ').innerText='1';let h='';tempProd.mods.forEach(m=>h+=`<span class="mod" onclick="toggleMod(this,'${m}')">${m}</span>`);document.getElementById('modList').innerHTML=h;document.getElementById('modModal').style.display='flex'}
-function toggleMod(el,m){el.classList.toggle('active');if(tempMods.includes(m))tempMods=tempMods.filter(x=>x!==m);else tempMods.push(m)}
-function modQty(d){tempQty=Math.max(1,tempQty+d);document.getElementById('modQ').innerText=tempQty}
-function addWithMod(){let name=tempProd.nome+(tempMods.length?' ('+tempMods.join(', ')+')':'');let ex=carrinho.find(c=>c.nome===name);if(ex){ex.qtd+=tempQty;ex.sub=ex.qtd*ex.preco}else carrinho.push({id:tempProd.id,nome:name,preco:tempProd.preco,qtd:tempQty,sub:tempProd.preco*tempQty,mods:tempMods});document.getElementById('modModal').style.display='none';atualizar();kitchenPrint(name+' x'+tempQty)}
-function atualizar(){let sub=carrinho.reduce((s,c)=>s+c.sub,0);let disc=curMember?sub*0.1:0;let total=sub-disc;document.getElementById('cart').innerHTML=carrinho.map((c,i)=>`<div style="display:flex;justify-content:space-between;padding:4px;border-bottom:1px solid #eee"><span>${c.nome} x${c.qtd}</span><span>MZN ${c.sub} <span style="color:red;cursor:pointer" onclick="removeItem(${i})">X</span></span></div>`).join('')||'<div style="color:#999;text-align:center">First make an order</div>';document.getElementById('total').innerText='MZN '+total;document.getElementById('bAmt').innerText='MZN '+total;document.getElementById('payBtn').innerText=total;document.getElementById('bNo').innerText=carrinho.length;document.getElementById('qtdL').innerText=carrinho.length+' items';document.getElementById('disc').innerText=disc?' -10% member':'';document.getElementById('payTotal')&&(document.getElementById('payTotal').innerText='MZN '+total);window._total=total;window._sub=sub;window._disc=disc}
-function removeItem(i){carrinho.splice(i,1);atualizar()}
-function kitchenPrint(txt){let w=window.open('','_blank','width=300,height=400');if(w){w.document.write(`<div style="font-family:monospace;padding:10px"><h3>KITCHEN - Order</h3><p>Table ${curTable||'-'} - ${new Date().toLocaleTimeString()}</p><hr>${txt}<hr><p>Kitchen can know which item has been cancelled / changed / combined</p></div>`);w.document.close();setTimeout(()=>{w.print();w.close()},400)}}
-function holdTable(){if(carrinho.length==0)return alert('First make an order');mode='hold';document.getElementById('tableModal').style.display='flex';document.getElementById('tTitle').innerText='Select a table to hold order - We can choose the table, Table No.';renderMesaGrid()}
-function retrieveTable(){mode='retrieve';document.getElementById('tableModal').style.display='flex';document.getElementById('tTitle').innerText='To retrieve order from table, click retrieve - Select the table to view order and make payment or add item';renderMesaGrid()}
-function renderMesaGrid(){let h='';mesas.forEach(m=>{let cls=m.ocupada?'ocupada':'livre';let txt=m.ocupada?`${m.id} - ${m.guests} guests - MZN ${m.pedido.total}`:m.id;h+=`<div class="mesa ${cls}" onclick="clickMesa('${m.id}')">${txt}</div>`});document.getElementById('mesaGrid').innerHTML=h;document.getElementById('guestBox').classList.add('hidden')}
-function clickMesa(id){selectedMesa=mesas.find(m=>m.id===id);if(mode==='hold'){if(selectedMesa.ocupada)return alert('Occupied');document.getElementById('guestBox').classList.remove('hidden')}else{if(!selectedMesa.ocupada)return alert('Free');curTable=selectedMesa.id;curGuest=selectedMesa.guests;carrinho=selectedMesa.pedido.itens;curMember=selectedMesa.pedido.member||null;document.getElementById('curMember').innerText=curMember?curMember.phone:'No member';selectedMesa.ocupada=false;selectedMesa.pedido=null;localStorage.setItem('myblle_mesas',JSON.stringify(mesas));closeModal('tableModal');document.getElementById('curTable').innerText=curTable;document.getElementById('curGuest').innerText=curGuest;atualizar();}}
-function confirmGuest(){let g=parseInt(document.getElementById('guestInput').value)||2;selectedMesa.ocupada=true;selectedMesa.guests=g;selectedMesa.pedido={itens:[...carrinho],total:window._total,sub:window._sub,member:curMember};localStorage.setItem('myblle_mesas',JSON.stringify(mesas));curTable=selectedMesa.id;curGuest=g;document.getElementById('curTable').innerText=curTable;document.getElementById('curGuest').innerText=curGuest;carrinho=[];atualizar();closeModal('tableModal');document.getElementById('guestBox').classList.add('hidden');kitchenPrint('NEW ORDER - Table '+curTable+' '+g+' guests - '+selectedMesa.pedido.itens.map(c=>c.nome+' x'+c.qtd).join(', '));alert('Order hold to table '+curTable)}
-function changeTable(){if(!curTable)return alert('No table');let newId=prompt('Change from '+curTable+' to which? ex: B2 - Change their table No.');if(!newId)return;let newM=mesas.find(m=>m.id===newId.toUpperCase());if(!newM||newM.ocupada)return alert('Invalid');let old=mesas.find(m=>m.id===curTable);newM.ocupada=true;newM.guests=old.guests;newM.pedido=old.pedido;old.ocupada=false;old.pedido=null;localStorage.setItem('myblle_mesas',JSON.stringify(mesas));curTable=newM.id;document.getElementById('curTable').innerText=curTable;kitchenPrint('CHANGE TABLE '+old.id+' to '+newM.id+' - Will sent notice to kitchen, they will know table changed');alert('Table changed')}
-function combineTable(){let t1=prompt('Table No.6?'),t2=prompt('Table No.7 to combine?');if(!t1||!t2)return;let m1=mesas.find(m=>m.id===t1.toUpperCase()),m2=mesas.find(m=>m.id===t2.toUpperCase());if(!m1||!m2||!m1.ocupada||!m2.ocupada)return alert('Both must be occupied - Combine bill and pay together');let comb={itens:[...m1.pedido.itens,...m2.pedido.itens],total:m1.pedido.total+m2.pedido.total,sub:m1.pedi
+renderProds();renderAreas();
+}
+function renderProds(){let h='';produtos.forEach(p=>h+=`<div class="prod" onclick="addCart(${p.id})"><div style="font-size:30px">🍛</div><div style="font-weight:bold;font-size:12px">${p.nome}</div><div style="color:#4caf50">MZN ${p.preco}</div></div>`);document.getElementById('prodGrid').innerHTML=h}
+function addCart(id){let p=produtos.find(x=>x.id===id);let ex=carrinho.find(c=>c.id===id);if(ex){ex.qtd++;ex.sub=ex.qtd*ex.preco}else carrinho.push({id:p.id,nome:p.nome,preco:p.preco,qtd:1,sub:p.preco});updateCart()}
+function updateCart(){let total=carrinho.reduce((s,c)=>s+c.sub,0);document.getElementById('total').innerText='MZN '+total;document.getElementById('cart').innerHTML=carrinho.map(c=>`<div style="padding:4px;border-bottom:1px solid #eee">${c.nome} x${c.qtd}=MZN ${c.sub}</div>`).join('')||'<div style="color:#999;text-align:center">First make an order</div>'}
+function showAdd(){document.getElementById('addBox').style.display='block'}
+function generate(){let name=document.getElementById('aName').value||'Salão',pref=document.getElementById('aPref').value||'A',num=parseInt(document.getElementById('aNum').value)||10;tempTables=[];for(let i=1;i<=num;i++)tempTables.push({id:pref+i,area:name});let h='';tempTables.forEach((t,i)=>h+=`<div style="display:flex;justify-content:space-between;padding:4px;border-bottom:1px solid #eee"><span>${t.id} - ${t.area}</span><span style="color:red;cursor:pointer" onclick="tempTables.splice(${i},1);generate()">🗑️ Delete</span></div>`);document.getElementById('preview').innerHTML=h}
+function saveAreas(){if(tempTables.length==0)return alert('Generate primeiro');let name=document.getElementById('aName').value;areas.push({name,prefix:document.getElementById('aPref').value,num:tempTables.length});tempTables.forEach(t=>{if(!mesas.find(m=>m.id===t.id))mesas.push({id:t.id,area:t.area,ocupada:false,pedido:null,guests:0})});localStorage.setItem('myblle_areas',JSON.stringify(areas));localStorage.setItem('myblle_mesas',JSON.stringify(mesas));tempTables=[];document.getElementById('preview').innerHTML='';renderAreas();alert('Save!')}
+function renderAreas(){let h='';areas.forEach((a,i)=>h+=`<tr><td>${a.name}</td><td>${a.prefix}</td><td>${a.num}</td><td><button onclick="areas.splice(${i},1);localStorage.setItem('myblle_areas',JSON.stringify(areas));renderAreas()">X</button></td></tr>`);document.getElementById('areaList').innerHTML=h}
+function openSettings(){document.getElementById('setModal').style.display='flex';renderAreas()}
+function holdOrder(){if(carrinho.length==0)return alert('First make an order');mode='hold';document.getElementById('tableModal').style.display='flex';document.getElementById('tTitle').innerText='Select a table to hold order';document.getElementById('tYellow').innerText='Select a table to hold order';renderMesas()}
+function retrieveOrder(){mode='retrieve';document.getElementById('tableModal').style.display='flex';document.getElementById('tTitle').innerText='To retrieve order from table, click retrieve';document.getElementById('tYellow').innerText='Select the table to view order and make payment or add item';renderMesas()}
+function renderMesas(){let h='';mesas.forEach(m=>{let cls=m.ocupada?'ocupada':'livre';let txt=m.ocupada?`${m.id} - ${m.guests} guests - MZN ${m.pedido.total}`:m.id;h+=`<div class="mesa ${cls}" onclick="clickMesa('${m.id}')">${txt}</div>`});document.getElementById('mesaGrid').innerHTML=h;document.getElementById('guestBox').style.display='none'}
+function clickMesa(id){selectedMesa=mesas.find(m=>m.id===id);if(mode==='hold'){if(selectedMesa.ocupada)return alert('Ocupada');document.getElementById('guestBox').style.display='block'}else{if(!selectedMesa.ocupada)return alert('Livre');carrinho=selectedMesa.pedido.itens;curTable=selectedMesa.id;curGuest=selectedMesa.guests;selectedMesa.ocupada=false;selectedMesa.pedido=null;localStorage.setItem('myblle_mesas',JSON.stringify(mesas));document.getElementById('tableModal').style.display='none';document.getElementById('curTable').innerText=curTable;document.getElementById('curGuest').innerText=curGuest;updateCart();}}
+function confirmGuest(){let g=parseInt(document.getElementById('guestInput').value)||2;selectedMesa.ocupada=true;selectedMesa.guests=g;selectedMesa.pedido={itens:[...carrinho],total:carrinho.reduce((s,c)=>s+c.sub,0)};localStorage.setItem('myblle_mesas',JSON.stringify(mesas));curTable=selectedMesa.id;curGuest=g;document.getElementById('curTable').innerText=curTable;document.getElementById('curGuest').innerText=curGuest;carrinho=[];updateCart();document.getElementById('tableModal').style.display='none';document.getElementById('guestBox').style.display='none';alert('Order hold to table '+curTable)}
+function pay(){let total=carrinho.length?carrinho.reduce((s,c)=>s+c.sub,0):0;if(total==0)return alert('Vazio');let w=window.open('','_blank');w.document.write(`<div style="font-family:monospace;padding:20px"><h2>MYBLLE - Table ${curTable}</h2>${carrinho.map(c=>`${c.nome} x${c.qtd}=MZN ${c.sub}`).join('<br>')}<hr>Total MZN ${total}</div>`);w.print();carrinho=[];updateCart()}
+// Enter com tecla Enter
+document.addEventListener('keydown',function(e){if(e.key==='Enter' &&!document.getElementById('loginScreen').classList.contains('hidden')===false){fazerLogin()}});
+</script></body></html>
