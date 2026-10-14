@@ -11,12 +11,7 @@ def home():
 
 @app.route('/api/status')
 def status():
-    return jsonify({
-        "app": "Myblle POS SaaS",
-        "status": "online",
-        "versao": "Mozambique MZN",
-        "filiais": "Nampula, Maputo, Beira"
-    })
+    return jsonify({"app":"Myblle POS SaaS","status":"online","MZN":"Mozambique"})
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))
