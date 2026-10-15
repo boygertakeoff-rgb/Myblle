@@ -1,95 +1,28 @@
-# -*- coding: utf-8 -*-
-import sqlite3, re
-from flask import Flask, request, session, redirect, render_template_string, jsonify
+from flask import Flask
 app = Flask(__name__)
-app.secret_key = "myblle-azul-v15-fix"
-
-def get_db():
-    return sqlite3.connect('myblle.db')
-
-def init_db():
-    conn = get_db()
-    c = conn.cursor()
-    c.execute("CREATE TABLE IF NOT EXISTS lojas (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT, cidade TEXT, parent_id INTEGER)")
-    c.execute("CREATE TABLE IF NOT EXISTS usuarios (user TEXT PRIMARY KEY, senha TEXT, nome TEXT, papel TEXT, loja_id INTEGER)")
-    c.execute("CREATE TABLE IF NOT EXISTS produtos (id TEXT, loja_id INTEGER, nome TEXT, preco REAL, stock INTEGER, codigo_barras TEXT, imagem TEXT, PRIMARY KEY(id, loja_id))")
-    c.execute("CREATE TABLE IF NOT EXISTS vendas (id INTEGER PRIMARY KEY AUTOINCREMENT, loja_id INTEGER, total REAL, data TEXT, vendedor TEXT)")
-    c.execute("SELECT COUNT(*) FROM usuarios")
-    if c.fetchone()[0]==0:
-        c.execute("INSERT INTO lojas (nome,cidade) VALUES ('Matriz Matola','Matola')")
-        lid=c.lastrowid
-        c.execute("INSERT INTO lojas (nome,cidade,parent_id) VALUES ('Filial Nampula','Nampula',?)", (lid,))
-        c.execute("INSERT INTO usuarios VALUES ('dono','dono123','DONO','dono',?)", (lid,))
-        c.execute("INSERT INTO usuarios VALUES ('1001','1001','Gerente','gerente',?)", (lid,))
-        c.execute("INSERT INTO usuarios VALUES ('1002','1002','Caixa','operador',?)", (lid,))
-        c.execute("INSERT INTO produtos VALUES ('23b12-107',?, 'Copo de Sorvete', 120, 50, '23b12-107', '')", (lid,))
-    conn.commit()
-    conn.close()
-init_db()
-
-def loja_nome(lid):
-    conn=get_db()
-    c=conn.cursor()
-    c.execute("SELECT nome FROM lojas WHERE id=?", (lid,))
-    r=c.fetchone()
-    conn.close()
-    return r[0] if r else "Loja"
-
-LOGIN_HTML = """<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>body{background:#0a3d8f;display:flex;justify-content:center;align-items:center;height:100vh;margin:0;font-family:Arial}.box{background:white;padding:26px;border-radius:18px;width:90%;max-width:380px;text-align:center}input{width:100%;padding:14px;margin:8px 0;border:2px solid #e2e8f0;border-radius:10px}button{width:100%;padding:14px;background:#0a3d8f;color:white;border:none;border-radius:10px;font-weight:bold;font-size:18px}</style></head><body><div class="box"><h2 style="color:#0a3d8f">MyBlle Azul</h2><form method="POST" action="/login"><input name="user" value="dono"><input name="senha" type="password" value="dono123"><button>ENTRAR</button></form><small>dono/dono123 DONO | 1001/1001 Gerente</small></div></body></html>"""
-
-POS_HTML = """<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script><style>*{margin:0;padding:0;box-sizing:border-box;font-family:Arial}.top{background:#0a3d8f;color:white;height:50px;display:flex;align-items:center;padding:0 10px;gap:8px;font-weight:bold}.main{display:flex;height:calc(100vh - 50px)}.left{width:300px;background:white;border-right:1px solid #ddd;display:flex;flex-direction:column}.cart{flex:1;overflow-y:auto}.footer{background:#0a3d8f;color:white;padding:10px}.right{flex:1;background:#f8fafc;display:flex;flex-direction:column}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;padding:10px;overflow-y:auto}.card{background:white;border:1px solid #e2e8f0;padding:8px;border-radius:10px;text-align:center;cursor:pointer}.modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.6);display:none;justify-content:center;align-items:center;z-index:100;padding:10px}.modal-box{background:white;width:98%;max-width:460px;border-radius:14px;overflow:hidden}.teclado{display:grid;grid-template-columns:repeat(3,1fr) 100px;gap:1px;background:#ddd}.teclado button{padding:16px;background:white;border:none}.teclado button.azul{background:#0a3d8f;color:white}.menu{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.4);display:none;z-index:200}.menu-box{background:#f8fafc;width:96%;max-width:760px;height:100%;overflow-y:auto;padding:14px}.menu-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.menu-item{background:white;padding:10px;border-radius:10px;text-align:center;font-size:10px;border:1px solid #e2e8f0;cursor:pointer}.input{width:100%;padding:11px;border:1px solid #ddd;border-radius:8px;margin:5px 0}</style></head><body>
-<div class="top"><span onclick="document.getElementById('menu').style.display='flex'" style="font-size:24px;cursor:pointer">☰</span><span>{{loja_nome}} - {{user}}</span><span style="margin-left:auto;cursor:pointer;background:white;color:#0a3d8f;padding:6px 10px;border-radius:8px;font-size:12px" onclick="startScan()">SCANNER</span><span onclick="location.href='/logout'">Sair</span></div>
-<div class="main"><div class="left"><div style="padding:8px;font-size:11px;background:#dbeafe">Vendedor: {{user}}</div><div class="cart" id="lista"></div><div class="footer"><span id="total">MT 0</span></div><button onclick="abrirPag()" style="width:100%;padding:14px;background:#0a3d8f;color:white;border:none;font-weight:bold">PAGAR AZUL</button></div><div class="right"><div style="display:flex;padding:8px;gap:6px;background:white"><input id="busca" placeholder="Codigo barras" style="flex:1;padding:10px;border:1px solid #ccc;border-radius:8px" oninput="render()"><button onclick="document.getElementById('modalProd').style.display='flex'" style="padding:10px;background:white;border:2px solid #0a3d8f;color:#0a3d8f;border-radius:8px">+ Produto</button></div><div class="grid" id="grid"></div></div></div>
-<div class="modal" id="scannerDiv"><div class="modal-box" style="padding:12px"><h3>Scanner</h3><div id="reader"></div><button onclick="stopScan()" style="width:100%;padding:10px;background:#eee;border:none;border-radius:8px">Fechar</button></div></div>
-<div class="modal" id="modalQtd"><div class="modal-box"><div style="padding:10px;text-align:center"><b id="mNome"></b><br><b id="mTotal" style="color:#0a3d8f">MT 0</b></div><input id="inputQtd" type="number" value="1" style="width:100%;padding:12px;text-align:center;border:2px solid #0a3d8f;border-radius:10px"><div class="teclado"><button onclick="addQ('1')">1</button><button onclick="addQ('2')">2</button><button onclick="addQ('3')">3</button><button onclick="addQtd(10)">+10</button><button onclick="addQ('4')">4</button><button onclick="addQ('5')">5</button><button onclick="addQ('6')">6</button><button onclick="document.getElementById('inputQtd').value=''">Apagar</button><button onclick="addQ('7')">7</button><button onclick="addQ('8')">8</button><button onclick="addQ('9')">9</button><button onclick="addQtd(20)">+20</button><button onclick="addQ('00')">00</button><button onclick="addQ('0')">0</button><button onclick="document.getElementById('modalQtd').style.display='none'">X</button><button class="azul" onclick="conf()">OK</button></div></div></div>
-<div class="modal" id="modalPag"><div class="modal-box"><div style="padding:10px;display:flex;justify-content:space-between"><div>Total<br><b id="pagTotal" style="font-size:22px;color:#0a3d8f">MT 0</b><br>Receber<br><input id="pagRec" style="border:2px solid #0a3d8f;padding:8px;width:110px" oninput="troco()"></div><div>Troco<br><b id="pagTroco" style="font-size:22px;color:#0a3d8f">MT 0</b><br><button onclick="imprimirRecibo()" style="margin-top:6px;padding:6px 10px;background:white;border:2px solid #0a3d8f;color:#0a3d8f;border-radius:8px">Recibo</button></div></div><div class="teclado"><button onclick="addP('1')">1</button><button onclick="addP('2')">2</button><button onclick="addP('3')">3</button><button onclick="setRec(50)">50</button><button onclick="addP('4')">4</button><button onclick="addP('5')">5</button><button onclick="addP('6')">6</button><button onclick="setRec(100)">100</button><button onclick="addP('7')">7</button><button onclick="addP('8')">8</button><button onclick="addP('9')">9</button><button onclick="setRec(200)">200</button><button onclick="addP('00')">00</button><button onclick="addP('0')">0</button><button onclick="addP('.')">.</button><button class="azul" onclick="finalizar()">Confirmar</button></div></div></div>
-<div class="menu" id="menu" onclick="if(event.target==this) this.style.display='none'"><div class="menu-box"><div style="display:flex;justify-content:space-between"><b style="color:#0a3d8f">Menu Azul</b><button onclick="document.getElementById('menu').style.display='none'" style="padding:8px 12px;background:#0a3d8f;color:white;border:none;border-radius:8px">Fechar</button></div><div style="background:#0a3d8f;color:white;padding:12px;border-radius:10px;margin:10px 0;font-weight:bold;cursor:pointer" onclick="window.location='/dono'">PAINEL DO DONO - TEMPO REAL</div><div class="menu-grid"><div class="menu-item" onclick="window.location='/recibos'">Recibos</div><div class="menu-item" onclick="window.location='/relatorio'">Relatorio Diario</div><div class="menu-item" onclick="window.location='/stock'">Stock</div><div class="menu-item" onclick="window.location='/etiquetas'">Etiquetas</div><div class="menu-item" onclick="document.getElementById('modalLoja').style.display='flex';loadLojas()">Cadastrar Filial</div><div class="menu-item" onclick="document.getElementById('modalCaixa').style.display='flex';loadCaixas()">Cadastrar Caixa</div><div class="menu-item" onclick="document.getElementById('modalTransf').style.display='flex';loadLojas()" style="border:2px solid #0a3d8f">Transferir Filiais</div></div></div></div>
-<div class="modal" id="modalProd"><div class="modal-box" style="padding:14px"><h3 style="color:#0a3d8f">Produto Azul</h3><div onclick="document.getElementById('fileImg').click()" style="width:100%;height:110px;border:2px dashed #0a3d8f;display:flex;align-items:center;justify-content:center;border-radius:10px"><span id="previewTxt">Foto</span><img id="previewImg" style="display:none;width:100%;height:100%;object-fit:cover"></div><input type="file" id="fileImg" accept="image/*" capture="environment" style="display:none" onchange="previewFile()"><input id="p_id" class="input" placeholder="Codigo"><input id="p_nome" class="input" placeholder="Nome"><div style="display:flex;gap:6px"><input id="p_preco" class="input" placeholder="Preco"><input id="p_stock" class="input" placeholder="Stock"></div><input id="p_barra" class="input" placeholder="Codigo barras"><div style="display:flex;gap:8px"><button onclick="document.getElementById('modalProd').style.display='none'" style="flex:1;padding:12px;background:#eee;border:none;border-radius:8px">Cancelar</button><button onclick="salvarProd()" style="flex:1;padding:12px;background:#0a3d8f;color:white;border:none;border-radius:8px">Salvar</button></div></div></div>
-<div class="modal" id="modalLoja"><div class="modal-box" style="padding:14px"><h3>Cadastrar Filial</h3><input id="l_nome" class="input" placeholder="Nome"><input id="l_cidade" class="input" placeholder="Cidade"><button onclick="salvarLoja()" style="width:100%;padding:12px;background:#0a3d8f;color:white;border:none;border-radius:8px">Salvar</button><div id="listaLojas"></div></div></div>
-<div class="modal" id="modalCaixa"><div class="modal-box" style="padding:14px"><h3>Cadastrar Caixa</h3><input id="c_user" class="input" placeholder="User"><input id="c_nome" class="input" placeholder="Nome"><input id="c_senha" class="input" type="password" placeholder="Senha"><select id="c_papel" class="input"><option value="operador">Caixa</option><option value="gerente">Gerente</option></select><select id="c_loja" class="input"></select><button onclick="salvarCaixa()" style="width:100%;padding:12px;background:#0a3d8f;color:white;border:none;border-radius:8px">Salvar</button><div id="listaCaixas"></div></div></div>
-<div class="modal" id="modalTransf"><div class="modal-box" style="padding:14px"><h3>Transferir entre Filiais</h3><select id="t_origem" class="input"></select><select id="t_destino" class="input"></select><input id="t_prod" class="input" placeholder="Codigo produto"><input id="t_qtd" type="number" class="input" placeholder="Qtd"><button onclick="transferir()" style="width:100%;padding:12px;background:#0a3d8f;color:white;border:none;border-radius:8px">Transferir</button></div></div>
-<div id="printArea" style="display:none"></div>
-<script>
-let prods=[];let car=[];let sel=null;let imgBase64="";let html5Qr=null;
-async function load(){let r=await fetch('/api/produtos');prods=await r.json();render();}
-function render(){let b=document.getElementById('busca').value.toLowerCase();let f=prods.filter(p=>!b||p.nome.toLowerCase().includes(b)||p.id.toLowerCase().includes(b));document.getElementById('grid').innerHTML=f.map(p=>`<div class="card" onclick="openQtd('${p.id}')">${p.imagem?`<img src="${p.imagem}">`:`📦`}<b>${p.id}</b><div style="font-size:11px">${p.nome}</div><div style="color:#0a3d8f;font-weight:bold">MT ${p.preco}</div><div style="font-size:9px">Stock:${p.stock}</div></div>`).join('');}
-function openQtd(id){sel=prods.find(p=>p.id==id);document.getElementById('mNome').innerText=sel.id+' - '+sel.nome;document.getElementById('inputQtd').value=1;document.getElementById('mTotal').innerText='MT '+sel.preco;document.getElementById('modalQtd').style.display='flex';}
-function addQ(n){document.getElementById('inputQtd').value+=n;updateTotal();}
-function addQtd(n){let v=parseInt(document.getElementById('inputQtd').value)||0;document.getElementById('inputQtd').value=v+n;updateTotal();}
-function updateTotal(){let q=parseInt(document.getElementById('inputQtd').value)||1;document.getElementById('mTotal').innerText='MT '+(sel.preco*q).toFixed(2);}
-function conf(){let q=parseInt(document.getElementById('inputQtd').value)||1;car.push({id:sel.id,nome:sel.nome,preco:sel.preco,qtd:q});draw();document.getElementById('modalQtd').style.display='none';}
-function draw(){let t=0;document.getElementById('lista').innerHTML=car.map((c,i)=>{t+=c.preco*c.qtd;return `<div style="display:flex;justify-content:space-between;padding:6px;border-bottom:1px solid #eee;font-size:12px"><span>${c.id} x${c.qtd}</span><span>MT ${(c.preco*c.qtd).toFixed(2)} <span onclick="car.splice(${i},1);draw()" style="color:red">X</span></span></div>`}).join('');document.getElementById('total').innerText='MT '+t.toFixed(2);document.getElementById('pagTotal').innerText='MT '+t.toFixed(2);}
-function abrirPag(){if(car.length==0){alert('Carrinho vazio');return;}document.getElementById('modalPag').style.display='flex';document.getElementById('pagRec').value=document.getElementById('total').innerText.replace('MT','').trim();troco();}
-function troco(){let tot=parseFloat(document.getElementById('pagTotal').innerText.replace('MT',''))||0;let rec=parseFloat(document.getElementById('pagRec').value.replace(/[^0-9.]/g,''))||0;document.getElementById('pagTroco').innerText='MT '+(rec-tot).toFixed(2);}
-function addP(n){document.getElementById('pagRec').value+=n;troco();}
-function setRec(v){let tot=parseFloat(document.getElementById('pagTotal').innerText.replace('MT',''))||0;document.getElementById('pagRec').value=tot+v;troco();}
-function imprimirRecibo(){let tot=document.getElementById('pagTotal').innerText;let html=`<div style="font-family:monospace;width:58mm"><center><b>{{loja_nome}}</b><br>Recibo<br>${new Date().toLocaleString()}</center><hr>`;car.forEach(c=>{html+=`${c.id} x${c.qtd} MT ${(c.preco*c.qtd).toFixed(2)}<br>`});html+=`<hr>Total: ${tot}<hr></div>`;document.getElementById('printArea').innerHTML=html;document.getElementById('printArea').style.display='block';window.print();document.getElementById('printArea').style.display='none';}
-async function finalizar(){let tot=parseFloat(document.getElementById('pagTotal').innerText.replace('MT',''));let rec=parseFloat(document.getElementById('pagRec').value.replace(/[^0-9.]/g,''))||0;let r=await fetch('/api/vender',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({total:tot,recebido:rec,troco:rec-tot,itens:car})});if(r.ok){imprimirRecibo();alert('Venda OK');car=[];draw();document.getElementById('modalPag').style.display='none';load();}}
-function startScan(){document.getElementById('scannerDiv').style.display='flex';html5Qr=new Html5Qrcode("reader");html5Qr.start({facingMode:"environment"},{fps:10,qrbox:250},(txt)=>{document.getElementById('busca').value=txt;render();let p=prods.find(x=>x.id==txt||x.codigo_barras==txt);if(p)openQtd(p.id);stopScan();});}
-function stopScan(){if(html5Qr){html5Qr.stop().then(()=>html5Qr.clear());}document.getElementById('scannerDiv').style.display='none';}
-function previewFile(){let f=document.getElementById('fileImg').files[0];if(f){let r=new FileReader();r.onload=e=>{imgBase64=e.target.result;document.getElementById('previewImg').src=imgBase64;document.getElementById('previewImg').style.display='block';document.getElementById('previewTxt').style.display='none';};r.readAsDataURL(f);}}
-async function salvarProd(){let preco=document.getElementById('p_preco').value.replace(/[^0-9.]/g,'')||'0';let stock=document.getElementById('p_stock').value.replace(/[^0-9]/g,'')||'0';let body={id:document.getElementById('p_id').value.trim(),nome:document.getElementById('p_nome').value.trim(),preco:preco,stock:stock,codigo_barras:document.getElementById('p_barra').value.trim()||document.getElementById('p_id').value.trim(),imagem:imgBase64};let res=await fetch('/api/produtos',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});if(res.ok){alert('Produto salvo');document.getElementById('modalProd').style.display='none';load();}}
-async function loadLojas(){let lojas=await (await fetch('/api/lojas')).json();document.getElementById('listaLojas').innerHTML=lojas.map(l=>`<div>${l.id} - ${l.nome}</div>`).join('');let s1=document.getElementById('c_loja');let s2=document.getElementById('t_origem');let s3=document.getElementById('t_destino');[s1,s2,s3].forEach(s=>{if(s)s.innerHTML=lojas.map(l=>`<option value="${l.id}">${l.nome}</option>`).join('');});}
-async function salvarLoja(){let body={nome:document.getElementById('l_nome').value,cidade:document.getElementById('l_cidade').value};let r=await fetch('/api/lojas',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});if(r.ok){alert('Filial criada');loadLojas();}}
-async function loadCaixas(){let caixas=await (await fetch('/api/caixas')).json();document.getElementById('listaCaixas').innerHTML=caixas.map(c=>`<div>${c.user} - ${c.nome} Loja ${c.loja_id}</div>`).join('');}
-async function salvarCaixa(){let body={user:document.getElementById('c_user').value,nome:document.getElementById('c_nome').value,senha:document.getElementById('c_senha').value,papel:document.getElementById('c_papel').value,loja_id:document.getElementById('c_loja').value};let r=await fetch('/api/caixas',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});if(r.ok){alert('Caixa criado');loadCaixas();}}
-async function transferir(){let body={origem:document.getElementById('t_origem').value,destino:document.getElementById('t_destino').value,produto_id:document.getElementById('t_prod').value,qtd:document.getElementById('t_qtd').value};let r=await fetch('/api/transferir',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});let j=await r.json();if(r.ok)alert('Transferido');else alert(j.erro);}
-load();
-</script></body></html>
-"""
 
 @app.route("/")
-def index():
-    if "user" not in session: return redirect("/login")
-    conn=get_db()
-    c=conn.cursor()
-    c.execute("SELECT loja_id,papel FROM usuarios WHERE user=?", (session["user"],))
-    r=c.fetchone()
-    if not r:
-        session.clear()
-        return redirect("/login")
-    loja_id, papel = r[0], r[1]
-    c.execute("SELECT nome FROM lojas WHERE id=?", (loja_id,))
-    ln=c.fetchone()
-    conn.close()
-    return render_template_string(POS_HTML, user=s
+def home():
+    return """
+    <body style="font-family:Arial;background:#0a3d8f;color:white;text-align:center;padding:40px">
+    <h1>MyBlle Azul - ONLINE</h1>
+    <p>Deploy funcionou!</p>
+    <p>Login: dono / dono123</p>
+    <a href="/login" style="background:white;color:#0a3d8f;padding:12px 20px;border-radius:10px;text-decoration:none;font-weight:bold">ENTRAR</a>
+    </body>
+    """
+
+@app.route("/login")
+def login():
+    return """
+    <body style="font-family:Arial;background:#0a3d8f;display:flex;justify-content:center;align-items:center;height:100vh;margin:0">
+    <div style="background:white;padding:25px;border-radius:16px;width:90%;max-width:360px;text-align:center">
+    <h2 style="color:#0a3d8f">MyBlle Azul</h2>
+    <p style="color:green;font-weight:bold">DEPLOY OK!</p>
+    <p>Agora vou colocar o sistema completo.</p>
+    <a href="/" style="color:#0a3d8f">Voltar</a>
+    </div></body>
+    """
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=10000)
