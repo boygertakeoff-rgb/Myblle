@@ -1,32 +1,47 @@
-import os, sqlite3, uuid
-from datetime import datetime
-from flask import Flask, request, jsonify, render_template_string, session, redirect
-from werkzeug.utils import secure_filename
+import os
+from flask import Flask, session, redirect, request, render_template_string, jsonify
 
 app = Flask(__name__)
-app.secret_key = "myblle_v3_2024"
-app.config['UPLOAD_FOLDER'] = 'static/produtos'
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+app.secret_key = "myblle-final-2024"
 
 USUARIOS = {
-    "admin": {"senha": "myblle123", "papel": "gerente", "loja": "Todas"},
-    "gerente": {"senha": "gerente123", "papel": "gerente", "loja": "Matola"},
-    "caixa": {"senha": "caixa123", "papel": "operador", "loja": "Matola"},
-    "operador": {"senha": "op123", "papel": "operador", "loja": "Maputo"}
+    "admin": {"senha": "myblle123", "papel": "gerente"},
+    "gerente": {"senha": "gerente123", "papel": "gerente"},
+    "caixa": {"senha": "caixa123", "papel": "operador"},
 }
 
-def init_db():
-    conn = sqlite3.connect('mzn_pos.db')
-    c = conn.cursor()
-    c.execute('CREATE TABLE IF NOT EXISTS produtos (id INTEGER PRIMARY KEY, nome TEXT, preco REAL, stock INTEGER, categoria TEXT, codigo_barras TEXT, imagem TEXT, loja TEXT)')
-    c.execute('CREATE TABLE IF NOT EXISTS vendas (id INTEGER PRIMARY KEY, produto_id INTEGER, produto_nome TEXT, qtd INTEGER, total REAL, data TEXT, loja TEXT, vendedor TEXT)')
-    conn.commit()
-    conn.close()
+LOGIN_HTML = """<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width"><title>Login</title>
+<style>body{font-family:Arial;background:#f3f4f6;display:flex;justify-content:center;align-items:center;height:100vh}
+.card{background:white;padding:30px;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,.1);width:300px}
+input{width:100%;padding:10px;margin:8px 0;border-radius:8px;border:1px solid #ccc}
+button{width:100%;padding:10px;background:#111827;color:white;border:none;border-radius:8px}</style></head>
+<body><div class="card"><h2>MyBlle</h2>
+<form method="POST" action="/login">
+<input name="user" placeholder="Usuario" required>
+<input name="senha" type="password" placeholder="Senha" required>
+<button>Entrar</button></form>
+<p style="font-size:12px;color:#666">admin / myblle123 = Gerente<br>caixa / caixa123 = Operador</p></div></body></html>"""
 
-init_db()
+@app.route("/")
+def index():
+    if "user" not in session: return redirect("/login")
+    if session.get("papel")=="gerente":
+        return f"<h1>Gerente {session['user']}</h1><p>Pode cadastrar e ver relatorios</p><a href='/logout'>Sair</a>"
+    else:
+        return f"<h1>Caixa {session['user']}</h1><p>Só vende</p><a href='/logout'>Sair</a>"
 
-# ... COLA AQUI O RESTO DO CÓDIGO V3 QUE TE MANDEI ANTES (LOGIN_HTML, GERENTE_HTML, OPERADOR_HTML e todas as rotas /api/ ) ...
-# IMPORTANTE: no final do arquivo deixa SÓ isso:
+@app.route("/login", methods=["GET","POST"])
+def login():
+    if request.method=="GET": return render_template_string(LOGIN_HTML)
+    user=request.form.get("user"); senha=request.form.get("senha")
+    u=USUARIOS.get(user)
+    if u and u["senha"]==senha:
+        session["user"]=user; session["papel"]=u["papel"]; return redirect("/")
+    return "Senha errada <a href='/login'>voltar</a>"
 
-if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=5000)
+@app.route("/logout")
+def logout():
+    session.clear(); return redirect("/login")
+
+if __name__=="__main__":
+    app.run(host="0.0.0.0", port=10000)
