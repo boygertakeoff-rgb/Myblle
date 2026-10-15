@@ -1,249 +1,196 @@
-# -*- coding: utf-8 -*-
-"""
-SISTEMA POS SAAS MOÇAMBIQUE - VERSÃO COMPLETA E UNIFICADA (WEB + MOBILE ANDROID)
-Moeda: Meticais (MZN) | Arquitetura: Flask API + Kivy Mobile GUI
-"""
-
-import os
-import sys
-import sqlite3
-from datetime import datetime, timedelta
-
-# =====================================================================
-# 1. ATIVAÇÃO DO BANCO DE DADOS CENTRAL (SQLite)
-# =====================================================================
-DB_NAME = "central_corporate_cloud.db"
-
-def inicializar_banco_dados():
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
-    
-    # Tabela de Filiais / Clientes SaaS
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS filiais (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nome TEXT NOT NULL,
-            localizacao TEXT,
-            pacote TEXT,
-            valor_mensalidade REAL,
-            data_expiracao TEXT,
-            estado_licenca TEXT
-        )
-    """)
-    
-    # Tabela de Utilizadores (Dono, Gerentes e Caixas)
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS utilizadores (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE,
-            password TEXT,
-            perfil TEXT,
-            filial_id INTEGER,
-            FOREIGN KEY(filial_id) REFERENCES filiais(id)
-        )
-    """)
-    
-    # Tabela de Produtos (Isolamento por Filial)
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS produtos (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            codigo_barras TEXT,
-            nome TEXT,
-            preco REAL,
-            stock_atual INTEGER,
-            stock_minimo INTEGER,
-            filial_id INTEGER,
-            FOREIGN KEY(filial_id) REFERENCES filiais(id)
-        )
-    """)
-    
-    # Tabela de Vendas / Transações Globais
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS vendas (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            filial_id INTEGER,
-            operador TEXT,
-            total REAL,
-            metodo_pagamento TEXT,
-            data_hora TEXT,
-            FOREIGN KEY(filial_id) REFERENCES filiais(id)
-        )
-    """)
-
-    # Inserção de dados de simulação padrão (Se a BD estiver vazia)
-    cursor.execute("SELECT COUNT(*) FROM filiais")
-    if cursor.fetchone()[0] == 0:
-        hoje = datetime.now()
-        data_ativa = (hoje + timedelta(days=30)).strftime("%Y-%m-%d")
-        data_expirada = (hoje - timedelta(days=1)).strftime("%Y-%m-%d")
-        
-        # Inserir Filiais de Teste com os Pacotes em MZN acordados
-        cursor.execute("INSERT INTO filiais VALUES (1, 'Maputo Sede', 'Av. Julius Nyerere', '1 Loja', 1000.0, ?, 'Ativa')", (data_ativa,))
-        cursor.execute("INSERT INTO filiais VALUES (2, 'Beira Filial', 'Av. Samora Machel', '3 a 4 Lojas', 3500.0, ?, 'Expirada')", (data_expirada,))
-        cursor.execute("INSERT INTO filiais VALUES (3, 'Supermercado Nampula', 'Av. Eduardo Mondlane', 'Supermercado', 10000.0, ?, 'Ativa')", (data_ativa,))
-        
-        # Inserir Utilizadores
-        cursor.execute("INSERT INTO utilizadores VALUES (1, 'admin', 'admin', 'Dono', 1)")
-        cursor.execute("INSERT INTO utilizadores VALUES (2, 'gerente', 'gerente123', 'Gerente', 1)")
-        cursor.execute("INSERT INTO utilizadores VALUES (3, 'caixa1', '1234', 'Caixa', 1)")
-        cursor.execute("INSERT INTO utilizadores VALUES (4, 'caixa2', '1234', 'Caixa', 2)")
-        
-        # Inserir Produtos em Meticais
-        cursor.execute("INSERT INTO produtos VALUES (1, '1111', 'Arroz Nacional 1kg', 75.0, 150, 30, 1)")
-        cursor.execute("INSERT INTO produtos VALUES (2, '2222', 'Oleo de Cozinha 1L', 130.0, 80, 20, 1)")
-        cursor.execute("INSERT INTO produtos VALUES (3, '3333', 'Farinha de Milho 1kg', 55.0, 12, 25, 1)") # Stock baixo para IA acusar
-        
-    conn.commit()
-    conn.close()
-
-# =====================================================================
-# 2. ESCRITA AUTOMÁTICA DO FICHEIRO BUILDOZER.SPEC (Android Compilação)
-# =====================================================================
-def gerar_buildozer_spec():
-    conteudo_spec = """[app]
-title = Mocambique POS SaaS
-package.name = mzpos_saas
-package.domain = co.mz.pos
-source.dir = .
-source.include_exts = py,png,jpg,kv,atlas,db
-version = 1.0.0
-requirements = python3,kivy,sqlite3,requests,reportlab,matplotlib
-
-# Permissões do Ecossistema Android para Hardware Comercial
-android.permissions = CAMERA, BLUETOOTH, BLUETOOTH_ADMIN, INTERNET, WRITE_EXTERNAL_STORAGE
-
-orientation = landscape
-fullscreen = 1
-android.archs = armeabi-v7a, arm64-v8a
-android.allow_backup = True
-
-[buildozer]
-log_level = 2
-warn_on_root = 1
-"""
-    with open("buildozer.spec", "w", encoding="utf-8") as f:
-        f.write(conteudo_spec)
-    print("[BUILDOZER] Ficheiro 'buildozer.spec' gerado com sucesso para compilação .APK.")
-
-# =====================================================================
-# 3. PILAR WEB CENTRAL: SERVIDOR API (Flask)
-# =====================================================================
-from flask import Flask, request, jsonify
+import os, sys, sqlite3, base64, uuid
+from datetime import datetime
+from flask import Flask, request, jsonify, render_template_string
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
+app.config['UPLOAD_FOLDER'] = 'static/produtos'
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-@app.route('/api/login', methods=['POST'])
-def api_login():
-    dados = request.json or {}
-    utilizador = dados.get("utilizador")
-    senha = dados.get("senha")
-    
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
-    cursor.execute("""
-        SELECT u.perfil, f.nome, f.data_expiracao, f.estado_licenca, f.id 
-        FROM utilizadores u 
-        JOIN filiais f ON u.filial_id = f.id 
-        WHERE u.username=? AND u.password=?
-    """, (utilizador, senha))
-    user = cursor.fetchone()
-    conn.close()
-    
-    if user:
-        perfil, filial_nome, data_exp, estado, filial_id = user
-        hoje = datetime.now().strftime("%Y-%m-%d")
-        
-        # Bloqueio Crítico de Mensalidade SaaS
-        if hoje > data_exp or estado == 'Expirada':
-            return jsonify({
-                "status": "bloqueado", 
-                "mensagem": "Acesso Bloqueado: Mensalidade em Atraso de Meticais! Contacte o Dono do Software."
-            }), 403
-            
-        return jsonify({
-            "status": "sucesso", "perfil": perfil, "filial": filial_nome, "filial_id": filial_id
-        })
-    return jsonify({"status": "erro", "mensagem": "Credenciais Inválidas em Moçambique."}), 401
+def inicializar_banco_dados():
+    conn = sqlite3.connect('mzn_pos.db')
+    c = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS categorias (id INTEGER PRIMARY KEY, nome TEXT UNIQUE)''')
+    c.execute('''CREATE TABLE IF NOT EXISTS produtos
+        (id INTEGER PRIMARY KEY, nome TEXT, preco REAL, stock INTEGER,
+         categoria TEXT, codigo_barras TEXT UNIQUE, imagem TEXT, loja TEXT)''')
+    c.execute('''CREATE TABLE IF NOT EXISTS vendas
+        (id INTEGER PRIMARY KEY, produto_id INTEGER, qtd INTEGER, total REAL, data TEXT, loja TEXT)''')
 
-@app.route('/api/caixa/venda', methods=['POST'])
-def registar_venda_api():
-    dados = request.json or {}
-    filial_id = dados.get("filial_id")
-    operador = dados.get("operador")
-    total = dados.get("total")
-    metodo = dados.get("metodo_pagamento") # M-Pesa, e-Mola, Dinheiro, POS
-    itens = dados.get("itens", [])
-    
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
-    
-    agora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    cursor.execute("INSERT INTO vendas (filial_id, operador, total, metodo_pagamento, data_hora) VALUES (?, ?, ?, ?, ?)",
-                   (filial_id, operador, total, metodo, agora))
-    
-    # Abate de stock por artigo vendido na filial
-    for item in itens:
-        prod_id = item.get("produto_id")
-        qtd = item.get("quantidade")
-        cursor.execute("UPDATE produtos SET stock_atual = stock_atual - ? WHERE id = ? AND filial_id = ?", 
-                       (qtd, prod_id, filial_id))
-        
+    # Categorias padrão
+    for cat in ["Polos", "Camisas", "T-Shirts", "Calças", "Acessórios"]:
+        try: c.execute("INSERT INTO categorias (nome) VALUES (?)", (cat,))
+        except: pass
     conn.commit()
     conn.close()
-    return jsonify({"status": "sucesso", "mensagem": "Venda integrada e armazenada na nuvem."})
 
-@app.route('/api/admin/mensalidades', methods=['GET'])
-def listar_mensalidades():
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
-    cursor.execute("SELECT nome, pacote, valor_mensalidade, data_expiracao, estado_licenca FROM filiais")
-    lojas = cursor.fetchall()
-    conn.close()
-    
-    resultado = []
-    for loja in lojas:
-        resultado.append({
-            "loja": loja[0], "pacote": loja[1], "mensalidade": f"{loja[2]:,.2f} MT", "expira": loja[3], "estado": loja[4]
-        })
-    return jsonify(resultado)
+def gerar_buildozer_spec():
+    return True # já está no projeto
 
-# =====================================================================
-# 4. PILAR MOBILE TÁTIL: INTERFACE GRÁFICA (Kivy)
-# =====================================================================
-# Condicional para permitir rodar o servidor headless em VPS ou abrir a GUI localmente
-try:
-    from kivy.app import App
-    from kivy.uix.boxlayout import BoxLayout
-    from kivy.uix.button import Button
-    from kivy.uix.label import Label
-    from kivy.uix.gridlayout import GridLayout
-    from kivy.uix.textinput import TextInput
-    KIVY_LOADED = True
-except ImportError:
-    KIVY_LOADED = False
+# === API E TELAS ===
+HTML = """
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MZN POS - myblle</title>
+<style>
+body{font-family:Arial;padding:10px;background:#f4f4f4}
+.card{background:white;padding:15px;border-radius:12px;margin-bottom:10px;box-shadow:0 2px 5px #0001}
+input,select,button{width:100%;padding:12px;margin:5px 0;border-radius:8px;border:1px solid #ccc}
+button{background:#1a8a1a;color:white;font-weight:bold;border:none}
+.prod{display:flex;gap:10px;align-items:center}
+.prod img{width:60px;height:60px;object-fit:cover;border-radius:8px}
+.top{display:flex;justify-content:space-between}
+.badge{background:#eee;padding:3px 8px;border-radius:10px;font-size:12px}
+</style>
+</head>
+<body>
+<h2>📱 MZN POS - Matola</h2>
 
-if KIVY_LOADED:
-    class FrenteCaixaKivy(BoxLayout):
-        def __init__(self, **kwargs):
-            super().__init__(orientation='vertical', padding=15, spacing=10, **kwargs)
-            
-            # Cabeçalho do Terminal Android
-            self.add_widget(Label(text="MZN MOBILE POS - FRENTE DE CAIXA TÁTIL", size_hint_y=0.1, font_size=20))
-            
-            # Corpo Principal dividido em duas secções (Produtos à esquerda, Carrinho à direita)
-            corpo = BoxLayout(orientation='horizontal', spacing=15)
-            
-            # Grelha Tátil de Artigos (Esquerda)
-            grelha_esquerda = BoxLayout(orientation='vertical', size_hint_x=0.6)
-            grelha_esquerda.add_widget(Label(text="Catálogo de Artigos (Toque para Adicionar)", size_hint_y=0.1))
-            
-            self.grelha_produtos = GridLayout(cols=2, spacing=10)
-            self.carregar_catalogo_loja()
-            grelha_esquerda.add_widget(self.grelha_produtos)
-            
-            # Painel do Carrinho e Caixa de Texto (Direita)
-            painel_direito = BoxLayout(orientation='vertical', size_hint_x=0.4, spacing=10)
-            self.lbl_carrinho = Label(text="Carrinho de Compras Vazio\n\nTotal: 0.00 MT", font_size=18, halign='center')
-            painel_direito.add_widget(self.lbl_carrinho)
-            
-            # Métodos de Pagamento Nacionais Rápidos
+<div class="card" style="background:#0a5c0a;color:white">
+  <div class="top"><span>Vendas HOJE</span><span id="hora"></span></div>
+  <h1 id="totalDia">MZN 0.00</h1>
+  <div id="qtdDia">0 vendas hoje</div>
+</div>
+
+<div class="card">
+  <h3>🔍 Pesquisar Produto</h3>
+  <input id="busca" placeholder="Nome, categoria ou código de barras..." onkeyup="pesquisar()">
+  <div id="listaProdutos"></div>
+</div>
+
+<div class="card">
+  <h3>➕ Cadastrar Produto</h3>
+  <form id="formProd" enctype="multipart/form-data">
+    <input name="nome" placeholder="Nome do produto" required>
+    <input name="preco" type="number" step="0.01" placeholder="Preço MZN" required>
+    <input name="stock" type="number" placeholder="Stock" required>
+    <select name="categoria" id="selCat"></select>
+    <input name="codigo_barras" placeholder="Código de barras (ex: 123456789)" required>
+    <select name="loja"><option>Matola</option><option>Maputo</option><option>Porto</option></select>
+    <label>Imagem do Produto:</label>
+    <input name="imagem" type="file" accept="image/*" required>
+    <button type="submit">SALVAR PRODUTO</button>
+  </form>
+</div>
+
+<div class="card">
+  <h3>📊 Relatório em Tempo Real</h3>
+  <button onclick="relatorio()">Atualizar Relatório de Hoje</button>
+  <div id="relatorio"></div>
+</div>
+
+<script>
+async function carregar(){
+  let res = await fetch('/api/produtos'); let prods = await res.json();
+  document.getElementById('listaProdutos').innerHTML = prods.map(p=>`
+    <div class="prod card"><img src="/${p[6] || 'static/produtos/no.png'}"><div><b>${p[1]}</b><br>${p[4]} | ${p[5]}<br>MZN ${p[2]} - Stock: ${p[3]}</div>
+    <button onclick="vender(${p[0]})" style="width:auto">VENDER</button></div>`).join('');
+
+  let res2 = await fetch('/api/categorias'); let cats = await res2.json();
+  document.getElementById('selCat').innerHTML = cats.map(c=>`<option>${c[1]}</option>`).join('');
+
+  relatorio();
+  setInterval(()=>{ document.getElementById('hora').innerText = new Date().toLocaleTimeString(); },1000);
+}
+async function pesquisar(){
+  let q = document.getElementById('busca').value;
+  let res = await fetch('/api/search?q='+q); let prods = await res.json();
+  document.getElementById('listaProdutos').innerHTML = prods.map(p=>`
+    <div class="prod card"><img src="/${p[6]}"><div><b>${p[1]}</b><br>${p[4]} | ${p[5]}<br>MZN ${p[2]}</div></div>`).join('');
+}
+async function relatorio(){
+  let res = await fetch('/api/relatorio_hoje'); let d = await res.json();
+  document.getElementById('totalDia').innerText = 'MZN ' + d.total.toFixed(2);
+  document.getElementById('qtdDia').innerText = d.qtd + ' vendas hoje';
+  document.getElementById('relatorio').innerHTML = d.vendas.map(v=>`#${v[0]} - ${v[2]}x - MZN ${v[3]} - ${v[4]}`).join('<br>');
+}
+async function vender(id){
+  let qtd = prompt("Quantidade:","1"); if(!qtd) return;
+  await fetch('/api/vender',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id, qtd})});
+  alert("Venda feita!"); relatorio(); carregar();
+}
+document.getElementById('formProd').onsubmit = async (e)=>{
+  e.preventDefault(); let fd = new FormData(e.target);
+  let res = await fetch('/api/produtos',{method:'POST',body:fd}); let j = await res.json();
+  alert(j.msg); e.target.reset(); carregar();
+}
+carregar();
+</script>
+</body>
+</html>
+"""
+
+@app.route('/')
+def index(): return render_template_string(HTML)
+
+@app.route('/api/categorias')
+def cats():
+    conn = sqlite3.connect('mzn_pos.db'); c = conn.cursor()
+    c.execute("SELECT * FROM categorias"); r=c.fetchall(); conn.close(); return jsonify(r)
+
+@app.route('/api/produtos')
+def get_prods():
+    conn = sqlite3.connect('mzn_pos.db'); c = conn.cursor()
+    c.execute("SELECT * FROM produtos ORDER BY id DESC"); r=c.fetchall(); conn.close(); return jsonify(r)
+
+@app.route('/api/search')
+def search():
+    q = request.args.get('q','')
+    conn = sqlite3.connect('mzn_pos.db'); c = conn.cursor()
+    c.execute("SELECT * FROM produtos WHERE nome LIKE? OR categoria LIKE? OR codigo_barras LIKE?", (f'%{q}%',f'%{q}%',f'%{q}%'))
+    r=c.fetchall(); conn.close(); return jsonify(r)
+
+@app.route('/api/produtos', methods=['POST'])
+def add_prod():
+    nome = request.form['nome']; preco=float(request.form['preco']); stock=int(request.form['stock'])
+    categoria=request.form['categoria']; codigo=request.form['codigo_barras']; loja=request.form['loja']
+    file = request.files['imagem']
+    filename = secure_filename(str(uuid.uuid4())+"_"+file.filename)
+    path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    file.save(path)
+    conn = sqlite3.connect('mzn_pos.db'); c = conn.cursor()
+    try:
+        c.execute("INSERT INTO produtos (nome, preco, stock, categoria, codigo_barras, imagem, loja) VALUES (?,?,?,?,?,?,?)",
+                  (nome, preco, stock, categoria, codigo, path, loja))
+        conn.commit(); msg="Produto cadastrado!"
+    except Exception as e: msg=f"Erro: {e} - Código de barras já existe?"
+    conn.close(); return jsonify({"msg":msg})
+
+@app.route('/api/vender', methods=['POST'])
+def vender():
+    data=request.json; pid=data['id']; qtd=int(data['qtd'])
+    conn = sqlite3.connect('mzn_pos.db'); c = conn.cursor()
+    c.execute("SELECT preco, stock FROM produtos WHERE id=?", (pid,)); preco, stock = c.fetchone()
+    if stock < qtd: return jsonify({"msg":"Sem stock"}),400
+    total=preco*qtd; hoje=datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    c.execute("UPDATE produtos SET stock=stock-? WHERE id=?", (qtd, pid))
+    c.execute("INSERT INTO vendas (produto_id, qtd, total, data, loja) VALUES (?,?,?,?,?)",(pid,qtd,total,hoje,"Matola"))
+    conn.commit(); conn.close(); return jsonify({"msg":"ok"})
+
+@app.route('/api/relatorio_hoje')
+def relatorio_hoje():
+    hoje = datetime.now().strftime("%Y-%m-%d")
+    conn = sqlite3.connect('mzn_pos.db'); c = conn.cursor()
+    c.execute("SELECT * FROM vendas WHERE data LIKE?", (f'{hoje}%',)); vendas=c.fetchall()
+    c.execute("SELECT SUM(total), COUNT(*) FROM vendas WHERE data LIKE?", (f'{hoje}%',)); total,qtd=c.fetchone()
+    conn.close(); return jsonify({"vendas":vendas, "total":total or 0, "qtd":qtd or 0})
+
+# === INICIO ===
+if __name__ == "__main__":
+    inicializar_banco_dados()
+    gerar_buildozer_spec()
+
+    em_android = 'ANDROID_ARGUMENT' in os.environ or hasattr(sys, 'getandroidsdk')
+
+    if em_android:
+        print("📱 A iniciar o MZN POS dentro do ambiente Nativo Android...")
+        # No Android usa Flask dentro de WebView
+        app.run(host='0.0.0.0', port=5000, debug=False)
+    elif len(sys.argv) > 1 and sys.argv[1] == '--server':
+        print("\n🚀 [NUVEM] Servidor SaaS Moçambique porta 5000...")
+        app.run(host='0.0.0.0', port=5000, debug=True)
+    else:
+        print("\n💻 [DESKTOP TESTE] Interface Web no PC...")
+        app.run(host='0.0.0.0', port=5000, debug=True)
